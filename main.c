@@ -2,6 +2,14 @@
 #include <avr/interrupt.h>
 
 #define BOUNCE 7
+
+//Definicoes pinos lcd
+#define LCD_comando_porta PORTC
+#define RS PC0
+#define E PC1
+#define LCD_dado_porta PORTD
+
+
 #define MYUBRR 51 //19200 baud rate
 
 #define C0 PH3
@@ -15,7 +23,14 @@
 
 char tecla_atual = '3';
 int confirmar_tecla;
-int toques_em_sequencia = 0; 
+int toques_em_sequencia = 0;
+
+char placa_digitada[8];
+int indice_placa = 0; 
+
+
+
+
 
 // Inicializa a Serial 
 void USART_init(int ubrr) {
@@ -208,15 +223,98 @@ char decodifica_tecla (char tecla){
     return tecla;
 }
 
+
+void lcd_atraso(){ //Conta 40 microssegundos
+	
+	TCNT2 = 176; // 80 contagens. 256 -80 = 176
+	TIFR2 = 1;
+	while ((TIFR2 & (1 << 0) )==0);
+
+}
+
+void lcd_cmd (unsigned char cmd){
+	LCD_comando_porta &= ~(1<<RS);
+	
+	LCD_dado_porta = (LCD_dado_porta & 0x0F) | (cmd & 0xF0);
+	LCD_comando_porta |= (1<<E);
+	delay_1ms();
+	LCD_comando_porta &= ~(1<<E);
+	
+	LCD_dado_porta = (LCD_dado_porta & 0x0F) | ((cmd<<4) & 0xF0);
+	LCD_comando_porta |= (1<<E);
+	delay_1ms();
+	LCD_comando_porta &= ~(1<<E);
+	
+}
+
+
+void lcd_data(unsigned char disp_data){
+	LCD_comando_porta |= (1<<RS);
+	
+	LCD_dado_porta = (LCD_dado_porta & 0x0F) | (disp_data & 0xF0);
+	LCD_comando_porta |= (1<<E);
+	delay_1ms();
+	LCD_comando_porta &= ~(1<<E);
+	
+	LCD_dado_porta = (LCD_dado_porta & 0x0F) | ((disp_data<<4) & 0xF0);
+	LCD_comando_porta |= (1<<E);
+	delay_1ms();
+	LCD_comando_porta &= ~(1<<E);
+	
+}
+
+void lcd_init (){
+	LCD_comando_porta &= ~(1<<RS);
+	
+	LCD_dado_porta &= 0x0F;
+	LCD_dado_porta |= 0X20;
+	LCD_comando_porta |= (1<<E);
+	LCD_comando_porta &= ~(1<<E);
+	delay_1ms();
+	
+	 lcd_cmd(0x28);
+	 lcd_cmd(0x0C);
+	 lcd_cmd(0x06);
+}
+
+void envia_string(char string[16]){
+	int i;
+	for (i = 0; i < 16; i++){
+		if (string[i] == '\0'){
+			return;
+		}
+		
+		lcd_data(string[i]);
+	}
+}
+
+
+void limpa_lcd(){
+	lcd_cmd(0x01); // limpa o display
+	delay_1ms();
+}
+
+void registra_caractere_confirmado(char letra){
+    if (indice_placa<7){ 
+        envia_char(letra);
+        lcd_data(letra);
+        placa_digitada[indice_placa] = letra;
+        indice_placa++;
+    }
+}
+
 int main(void) {
     char tecla_pressionada;
     char tecla_anterior = '\0';
     char tecla_pendente = '\0';
     
+    
     PINH = 0xFF;
     
-    // Inicializa a Serial a 9600 bauds
-    USART_init(MYUBRR);
+    
+    USART_init(MYUBRR); // Inicializa a Serial a 9600 bauds
+   
+
     
     TCCR0A = 0;
     TCCR0B = 3; // prescaler de 64
@@ -229,10 +327,22 @@ int main(void) {
      
     OCR1A = 31249; //31250 - 1 (500ms)
     TCCR1B &= ~((1 << CS12) | (1 << CS11) | (1 << CS10)); // começa desligado
+
+    TCCR2A = 0; 
+	TCCR2B = 2; //Timer 2 com prescaler de 8;
+    
     
     DDRH &= ~((1 << C0) | (1 << C1) | (1 << C2)); //entradas
     DDRB |= (1 << 7) | (1<<L0) | (1<<L1)| (1<<L2)| (1<<L3); //saidas
+    DDRC |= (1 << RS) | (1 << E);
+    DDRD |= 0xF0;
 
+    lcd_init(); //inicia lcd
+
+    lcd_cmd(0x80); //posiciona cursor na primeira linha
+    envia_string("DIGITE PLACA");
+
+    lcd_cmd(0xC0); //cursor na segunda linha
     while(1) {
         tecla_pressionada = ler_teclado();
         
@@ -246,7 +356,8 @@ int main(void) {
             else{ //se foi apertada uma tecla diferente
                 
                 if (tecla_pendente != '\0'){
-                    envia_char (decodifica_tecla(tecla_pendente));
+                    char caractere_confirmado = decodifica_tecla(tecla_pendente); //confirma a tecla anterior
+                    registra_caractere_confirmado(caractere_confirmado);
                 }
                 
                 toques_em_sequencia = 1;
@@ -258,17 +369,26 @@ int main(void) {
             TCCR1B |= (1 << CS12); //liga timer com prescaler 256
         }
             
-        if (confirmar_tecla == 1){
+        if (confirmar_tecla == 1){ //se passou o tempo
             if(tecla_pendente !='\0'){ 
-                envia_char (decodifica_tecla(tecla_pendente));
+                char caractere_confirmado = decodifica_tecla(tecla_pendente); //confirma a tecla
+                registra_caractere_confirmado(caractere_confirmado);
                 toques_em_sequencia = 0;
                 tecla_pendente = '\0';
-                confirmar_tecla = 0;
+                
             }
         }
-        
-    tecla_anterior = tecla_pressionada;
-    }
+        confirmar_tecla = 0;
+
+        if(indice_placa == 7){
+            placa_digitada [7] = '\0';
+            //funcao para verficar placa
+            //....
+        }
     
+    tecla_anterior = tecla_pressionada;
+
+    }
+
     return 0;
 }

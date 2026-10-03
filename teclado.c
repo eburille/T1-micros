@@ -185,13 +185,25 @@ char decodifica_tecla (char tecla){
 
 
 void roda_teclado() {
+    
     tecla_pressionada = ler_teclado();
         
     if(tecla_pressionada != '\0' && (tecla_pressionada != tecla_anterior)){      
         tecla_atual = tecla_pressionada;
             
         if (tecla_atual == tecla_pendente){ //se a tecla pressionada for igual a anterior
-            toques_em_sequencia++;         
+            toques_em_sequencia++;
+            //Dá a volta para o começo caso passe do ultimo valor
+            if(tecla_atual =='7'|| tecla_atual == '9'){
+                if (toques_em_sequencia > 5){
+                    toques_em_sequencia = 1;
+                }
+            }
+            else{
+                if(toques_em_sequencia > 4){
+                    toques_em_sequencia = 1;
+                }
+            }            
         } else { //se foi apertada uma tecla diferente        
             if (tecla_pendente != '\0'){
                 char caractere_confirmado = decodifica_tecla(tecla_pendente); //confirma a tecla anterior
@@ -221,4 +233,13 @@ void roda_teclado() {
     }
     confirmar_tecla = 0;
     tecla_anterior = tecla_pressionada;
+}
+
+void reset_memoria_teclado() {
+    tecla_pressionada = '\0';
+    tecla_pendente    = '\0';
+    tecla_anterior    = '\0';
+    toques_em_sequencia = 0;
+    nova_tecla = TECLADO_LIVRE;
+    saida_teclado = '\0';
 }

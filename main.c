@@ -8,6 +8,13 @@
 
 int indice_placa = 0; 
 char placa_digitada[8];
+int estado_sistema = 0; 
+// 0 = digitando placa
+// 1 = validando
+//2 = placa invalida
+
+int resetar_tela = 0;
+int tempo_erro = 0;
 
 void registra_caractere_confirmado(char letra){
     if (indice_placa<7){ 
@@ -18,9 +25,36 @@ void registra_caractere_confirmado(char letra){
     }
 }
 
+void verifica_placa(){
+    
+    if ((placa_digitada[0]<'A'|| placa_digitada[0]>'Z')|| (placa_digitada[1]<'A'|| placa_digitada[1]>'Z')|| (placa_digitada[2]<'A'|| placa_digitada[2]>'Z')
+        || (placa_digitada[3]<'0'|| placa_digitada[3]>'9')|| (placa_digitada[5]<'0'|| placa_digitada[5]>'9')|| (placa_digitada[6]<'0'|| placa_digitada[6]>'9') 
+        ||  ((placa_digitada[4]<'0'|| placa_digitada[4]>'9')&&(placa_digitada[4]<'A'|| placa_digitada[4]>'Z')) ){
+        limpa_lcd();    
+        envia_string("PLACA INVALIDA");
+        estado_sistema = 2;
+        TCNT1 = 0; 
+        TCCR1B |= (1 << CS12);
+    }
+    //fazer o codigo caso a placa seja valida   
+}
+
+
 ISR (TIMER1_COMPA_vect){
-    confirmar_tecla = 1;
-    TCCR1B &= ~((1 << CS12) | (1 << CS11) | (1 << CS10)); //desliga o timer
+    if (estado_sistema == 0){ 
+        confirmar_tecla = 1;
+        TCCR1B &= ~((1 << CS12) | (1 << CS11) | (1 << CS10)); //desliga o timer
+    }
+    else if (estado_sistema == 2){
+        tempo_erro++;
+        if(tempo_erro >= 4){ //So entra aqui quando contar 4 vezes
+            resetar_tela = 1; //ativa a flag para voltar para a tela inicial
+            tempo_erro = 0;
+            TCCR1B &= ~((1 << CS12) | (1 << CS11) | (1 << CS10)); //desliga o timer
+        }
+        
+    }
+
 }
 
 int main(void) {
@@ -55,14 +89,32 @@ int main(void) {
 
     while(1) {
         
-        roda_teclado();
-        if (nova_tecla == TECLADO_PRESSIONADO){
-            registra_caractere_confirmado(saida_teclado);
-            UART_transmit(saida_teclado);
-            nova_tecla = TECLADO_LIVRE;
+
+        if (estado_sistema == 0){ 
+            roda_teclado();
+            
+            if (nova_tecla == TECLADO_PRESSIONADO){
+                registra_caractere_confirmado(saida_teclado);
+                UART_transmit(saida_teclado);
+                nova_tecla = TECLADO_LIVRE;
+            }
+            
+            if(indice_placa == 7){
+                placa_digitada [7] = '\0';
+                estado_sistema = 1;
+                verifica_placa();
+            }
         }
-
-
+        else if (estado_sistema == 2 && resetar_tela == 1){ //Se a placa é invalida e ja pode resetar a tela
+            resetar_tela = 0;
+            limpa_lcd();
+            lcd_cmd(0x80); //posiciona cursor na primeira linha
+            envia_string("DIGITE PLACA");
+            lcd_cmd(0xC0); //cursor na segunda linha
+            indice_placa = 0;
+            reset_memoria_teclado();
+            estado_sistema = 0; //Volta para o estado inicial de dgitar a placa
+        }
     }
 
     return 0;

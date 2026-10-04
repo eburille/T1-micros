@@ -27,6 +27,8 @@ void registra_caractere_confirmado(char letra){
 
 void verifica_placa(){
     
+    reset_memoria_teclado();
+    //placa inválida
     if ((placa_digitada[0]<'A'|| placa_digitada[0]>'Z')|| (placa_digitada[1]<'A'|| placa_digitada[1]>'Z')|| (placa_digitada[2]<'A'|| placa_digitada[2]>'Z')
         || (placa_digitada[3]<'0'|| placa_digitada[3]>'9')|| (placa_digitada[5]<'0'|| placa_digitada[5]>'9')|| (placa_digitada[6]<'0'|| placa_digitada[6]>'9') 
         ||  ((placa_digitada[4]<'0'|| placa_digitada[4]>'9')&&(placa_digitada[4]<'A'|| placa_digitada[4]>'Z')) ){
@@ -35,13 +37,21 @@ void verifica_placa(){
         estado_sistema = 2;
         TCNT1 = 0; 
         TCCR1B |= (1 << CS12);
+    }else{
+        limpa_lcd();
+        
+        lcd_cmd(0x80);
+        envia_string("TEMPO: 1)30min");
+        lcd_cmd(0xC0);
+        envia_string("2)1h 3)1h30 4)2h");
+        estado_sistema = 1;
     }
-    //fazer o codigo caso a placa seja valida   
+      
 }
 
 
 ISR (TIMER1_COMPA_vect){
-    if (estado_sistema == 0){ 
+    if (estado_sistema == 0 || estado_sistema == 1){ 
         confirmar_tecla = 1;
         TCCR1B &= ~((1 << CS12) | (1 << CS11) | (1 << CS10)); //desliga o timer
     }
@@ -89,7 +99,6 @@ int main(void) {
 
     while(1) {
         
-
         if (estado_sistema == 0){ 
             roda_teclado();
             
@@ -101,7 +110,6 @@ int main(void) {
             
             if(indice_placa == 7){
                 placa_digitada [7] = '\0';
-                estado_sistema = 1;
                 verifica_placa();
             }
         }
@@ -112,10 +120,34 @@ int main(void) {
             envia_string("DIGITE PLACA");
             lcd_cmd(0xC0); //cursor na segunda linha
             indice_placa = 0;
-            reset_memoria_teclado();
             estado_sistema = 0; //Volta para o estado inicial de dgitar a placa
         }
+        else if (estado_sistema == 1) {
+            
+            roda_teclado();
+            if (nova_tecla == TECLADO_PRESSIONADO){
+                int tempo_escolhido = 0;
+                if (saida_teclado == '1'){
+                    tempo_escolhido = 30; //30min
+                }
+                else if (saida_teclado == 'A'){
+                    tempo_escolhido = 60;
+                }
+                else if (saida_teclado == 'D'){
+                    tempo_escolhido = 90;
+                }
+                else if (saida_teclado =='G'){
+                    tempo_escolhido = 120;
+                }
+            
+                if (tempo_escolhido>0){
+                    limpa_lcd ();
+                    envia_string("PAGAMENTO");
+                    estado_sistema = 3;
+                }
+                nova_tecla = TECLADO_LIVRE;
+            }
+        }
     }
-
     return 0;
 }

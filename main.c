@@ -5,6 +5,9 @@
 #include "lcd_lib.h"
 #include "delay.h"
 #include "uart_lib.h"
+#include "gerenciador_msgs.h"
+#include "mensagem.h"
+#include "buffer_circular.h"
 
 int indice_placa = 0; 
 char placa_digitada[8];
@@ -68,7 +71,8 @@ ISR (TIMER1_COMPA_vect){
 }
 
 int main(void) {
-    
+    Mensagem msg;
+
     PINH = 0xFF;
     
     UART_init();
@@ -92,10 +96,12 @@ int main(void) {
     lcd_init(); //inicia lcd
 
     lcd_cmd(0x80); //posiciona cursor na primeira linha
-    envia_string("DIGITE PLACA");
+    envia_string("DIGITE PLACA d");
     lcd_cmd(0xC0); //cursor na segunda linha
 
     init_teclado();
+
+    init_gerenciador_msgs();
 
     while(1) {
         
@@ -107,7 +113,7 @@ int main(void) {
                 UART_transmit(saida_teclado);
                 nova_tecla = TECLADO_LIVRE;
             }
-            
+                    
             if(indice_placa == 7){
                 placa_digitada [7] = '\0';
                 verifica_placa();
@@ -147,6 +153,18 @@ int main(void) {
                 }
                 nova_tecla = TECLADO_LIVRE;
             }
+        }
+
+        novo_caracter_recebido_UART();
+        gerenciar_msgs();
+
+        if (novas_mensagens() > 0){
+            msg = le_mensagem();
+            limpa_lcd();
+            lcd_cmd(0x80); //posiciona cursor na primeira linha
+            envia_string(msg.tipo);
+            lcd_cmd(0xC0); //cursor na segunda linha
+            envia_string(msg.string);
         }
     }
     return 0;

@@ -1,4 +1,5 @@
 #include "parkimetro.h"
+#include "hora.h"
 
 #define CARRO_PRESENTE  0
 #define CARRO_AUSENTE   1
@@ -12,15 +13,23 @@
 char num_carros = 0;
 
 void adiciona_carro(char placa[7], char especial, char tempo_contratado, char rua){
-    char hora_atual; //////// Fazer função para pegar hora atual
+    char hora_atual[6];
+    
+    hora_atual_str(hora_atual); //////// Fazer função para pegar hora atual
     Carro novo_carro = {placa, especial, hora_atual, tempo_contratado, REGULAR, rua};
 
     carros[num_carros] = novo_carro;
     num_carros++;
 }
 
-char verifica_carro(Carro carro){
-//// implementar logica para verificar se carro está irregular ////
+/// @brief Verificar se um carro ja ultrapassou o tempo limite de permanência contratada + tolerância
+/// @param carro Carro a ter a regularidade verificada
+/// @return Retorna condição de regularidade do carro
+char verifica_carro_irregular(Carro carro){
+    if (calc_delta_time_min(carro.hora_entrada) > (carro.tempo_contratado + TOLERANCIA_MIN)){
+        return IRREGULAR;
+    }
+    return REGULAR;
 }
 
 /// @brief Verifica todos os carros para garantir se algum deles passou do tempo limite
@@ -53,6 +62,7 @@ void verifica_carros_presentes(char placas[][8], char num_placas){
         for (j; j < num_placas; j++){
             if (compara_placas(carros[i].placa, placas[j])){
                 carro_presente = CARRO_PRESENTE;
+                break;
             }
         }
 

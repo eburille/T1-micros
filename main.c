@@ -10,6 +10,7 @@
 #include "gerenciador_msgs.h"
 #include "mensagem.h"
 #include "buffer_circular.h"
+#include "hora.h"
 
 #define DIGITANDO_PLACA    0
 #define PLACA_VALIDA       1
@@ -96,6 +97,16 @@ ISR (TIMER1_COMPA_vect){
     }
 }
 
+ISR(TIMER3_COMPA_vect) {
+    static char contador_segundos = 0;
+
+    contador_segundos++;
+    if (contador_segundos >= 60) {
+        contador_segundos = 0;
+        prox_minuto();
+    }
+}
+
 int main(void) {
     Mensagem msg;
 
@@ -104,21 +115,38 @@ int main(void) {
     UART_init();
 
     /////////  TIMERS //////////
+
+      ///// TIMER 0 /////
     TCCR0A = 0;
     TCCR0B = 3; // prescaler de 64
     
+      ///// TIMER 1 /////
     TIMSK1 = (1 << 1); // interrupcao timer 1
-    sei(); // Ativa interrupcao global
     
     TCCR1A = 0;
     TCCR1B = (1 << WGM12); //modo ctc
-     
+    
     OCR1A = 31249; //31250 - 1 (500ms)
     TCCR1B &= ~((1 << CS12) | (1 << CS11) | (1 << CS10)); // começa desligado
-
+    
+      ///// TIMER 2 /////
     TCCR2A = 0; 
 	TCCR2B = 2; //Timer 2 com prescaler de 8;
     
+      ///// TIMER 3 /////
+
+    // 1 SEGUNDO
+    OCR3A = 15625; 
+
+    // Habilita o modo CTC + Prescaler para 1024
+    TCCR3B |= (1 << WGM32) | (1 << CS32) | (1 << CS30); 
+    
+    // Habilita a interrupção de comparação A do Timer3 (OCIE3A)
+    TIMSK3 |= (1 << OCIE3A);
+
+    sei(); // Ativa interrupcao global
+
+
     lcd_init(); //inicia lcd
 
     lcd_cmd(0x80); //posiciona cursor na primeira linha

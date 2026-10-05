@@ -72,18 +72,18 @@ char le_char(){
     return msg;
 }
 
-int novas_mensagens(){
-    int num_novas_mensagens = msg_buff.i_escrita - msg_buff.i_leitura;
-    if (num_novas_mensagens < 0){
-        num_novas_mensagens = num_novas_mensagens + CIRCBUFFSIZE;
+int novas_mensagens_servidor(){
+    int num_novas_mensagens_servidor = msg_buff.i_escrita - msg_buff.i_leitura;
+    if (num_novas_mensagens_servidor < 0){
+        num_novas_mensagens_servidor = num_novas_mensagens_servidor + CIRCBUFFSIZE;
     }
-    return num_novas_mensagens;
+    return num_novas_mensagens_servidor;
 }
 
 int novos_caracteres(){
-    int num_novas_mensagens = char_buff.i_escrita - char_buff.i_leitura;
-    if (num_novas_mensagens < 0){
-        num_novas_mensagens = num_novas_mensagens + CIRCBUFFSIZE;
+    int num_novas_caracteres = char_buff.i_escrita - char_buff.i_leitura;
+    if (num_novas_caracteres < 0){
+        num_novas_caracteres = num_novas_caracteres + CIRCBUFFSIZE;
     }
-    return num_novas_mensagens;
+    return num_novas_caracteres;
 }

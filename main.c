@@ -11,12 +11,17 @@
 #include "mensagem.h"
 #include "buffer_circular.h"
 
-int indice_placa = 0; 
-char placa_digitada[8];
-int estado_sistema = 0; 
+#define DIGITANDO_PLACA    0
+#define PLACA_VALIDA       1
+#define PLACA_INVALIDA     2
 // 0 = digitando placa
 // 1 = valida
 //2 = placa invalida
+
+int indice_placa = 0; 
+char placa_digitada[8];
+int estado_sistema = 0; 
+
 int flag_vaga_especial = 0;
 int resetar_tela = 0;
 int tempo_erro = 0;
@@ -47,7 +52,7 @@ void verifica_placa(){
         ||  ((placa_digitada[4]<'0'|| placa_digitada[4]>'9')&&(placa_digitada[4]<'A'|| placa_digitada[4]>'Z')) ){
         limpa_lcd();    
         envia_string("PLACA INVALIDA");
-        estado_sistema = 2;
+        estado_sistema = PLACA_INVALIDA;
         TCNT1 = 0; 
         TCCR1B |= (1 << CS12);
     }else{
@@ -71,26 +76,24 @@ void verifica_placa(){
             lcd_cmd(0xC0);
             envia_string("2)1h 3)1h30 4)2h");
         }
-        estado_sistema = 1;
+        estado_sistema = PLACA_VALIDA;
     }
 }
 
 
 ISR (TIMER1_COMPA_vect){
-    if (estado_sistema == 0 || estado_sistema == 1){ 
+    if (estado_sistema == DIGITANDO_PLACA || estado_sistema == PLACA_VALIDA){ 
         confirmar_tecla = 1;
         TCCR1B &= ~((1 << CS12) | (1 << CS11) | (1 << CS10)); //desliga o timer
     }
-    else if (estado_sistema == 2){
+    else if (estado_sistema == PLACA_INVALIDA){
         tempo_erro++;
         if(tempo_erro >= 4){ //So entra aqui quando contar 4 vezes
             resetar_tela = 1; //ativa a flag para voltar para a tela inicial
             tempo_erro = 0;
             TCCR1B &= ~((1 << CS12) | (1 << CS11) | (1 << CS10)); //desliga o timer
         }
-        
     }
-
 }
 
 int main(void) {
@@ -128,7 +131,7 @@ int main(void) {
 
     while(1) {
         
-        if (estado_sistema == 0){ 
+        if (estado_sistema == DIGITANDO_PLACA){ 
             roda_teclado();
             
             if (nova_tecla == TECLADO_PRESSIONADO){
@@ -142,16 +145,16 @@ int main(void) {
                 verifica_placa();
             }
         }
-        else if (estado_sistema == 2 && resetar_tela == 1){ //Se a placa é invalida e ja pode resetar a tela
+        else if (estado_sistema == PLACA_INVALIDA && resetar_tela == 1){ //Se a placa é invalida e ja pode resetar a tela
             resetar_tela = 0;
             limpa_lcd();
             lcd_cmd(0x80); //posiciona cursor na primeira linha
             envia_string("DIGITE PLACA");
             lcd_cmd(0xC0); //cursor na segunda linha
             indice_placa = 0;
-            estado_sistema = 0; //Volta para o estado inicial de dgitar a placa
+            estado_sistema = DIGITANDO_PLACA; //Volta para o estado inicial de dgitar a placa
         }
-        else if (estado_sistema == 1) {
+        else if (estado_sistema == PLACA_VALIDA) {
             
             roda_teclado();
             if (nova_tecla == TECLADO_PRESSIONADO){
@@ -208,10 +211,10 @@ int main(void) {
             }
         }
 
-        novo_caracter_recebido_UART();
+        // novo_caracter_recebido_UART();
         gerenciar_msgs();
 
-        if (novas_mensagens() > 0){
+        if (novas_mensagens_servidor() > 0){
             msg = le_mensagem();
             limpa_lcd();
             lcd_cmd(0x80); //posiciona cursor na primeira linha

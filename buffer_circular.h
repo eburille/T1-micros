@@ -22,7 +22,7 @@ extern BufferCircularChar char_buff;
 
 void adiciona_mensagem(Mensagem msg);
 Mensagem le_mensagem();
-int novas_mensagens();
+int novas_mensagens_servidor();
 
 void adiciona_char(char caracter);
 char le_char();

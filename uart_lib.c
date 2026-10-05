@@ -1,5 +1,6 @@
 #include <avr/io.h>
 #include "uart_lib.h"
+#include <avr/interrupt.h>
 
 #define BAUD 9600
 #define UBRR_VALUE ((F_CPU / (16UL * BAUD)) - 1)
@@ -12,8 +13,8 @@ void UART_init(){
     UBRR0H = (unsigned char)(UBRR_VALUE >> 8);
     UBRR0L = (unsigned char)UBRR_VALUE;
 
-    // Habilita transmissão
-    UCSR0B = (1 << RXEN0) | (1 << TXEN0);
+    // Habilita transmissão, receptor e Interupção
+    UCSR0B = (1 << RXEN0) | (1 << TXEN0) | (1 << RXCIE0);
 
     // 8 bits, 1 stop bit, sem paridade
     UCSR0C = (1 << UCSZ01) | (1 << UCSZ00);
@@ -25,6 +26,13 @@ void UART_transmit(char data)
     while (!(UCSR0A & (1 << UDRE0)));
 
     UDR0 = data;
+}
+
+ISR(USART0_RX_vect) {
+    // Lê o dado recebido do registrador UDR0
+    char c = UDR0;
+
+    adiciona_char(c);
 }
 
 void recebe_letra(){

@@ -2,6 +2,7 @@
 #include <avr/interrupt.h>
 #include <string.h>
 #include <stdio.h>
+#include "hora.h"
 
 #include "teclado.h"
 #include "lcd_lib.h"
@@ -10,17 +11,28 @@
 #include "gerenciador_msgs.h"
 #include "mensagem.h"
 #include "buffer_circular.h"
-#include "hora.h"
 
 #define DIGITANDO_PLACA    0
 #define PLACA_VALIDA       1
 #define PLACA_INVALIDA     2
+#define MENU_PAGAMENTO     3
+#define MOEDA              4
+#define CARTAO             5 
+#define CARTAO_VIRT        6 
+#define CARTAO_SENHA       7 
+#define CARTAO_INVALIDO    8
+#define SENHA_INVALIDA     9
 // 0 = digitando placa
 // 1 = valida
 //2 = placa invalida
+// 3 = selecioando tipo pagamento
 
 int indice_placa = 0; 
+int indice_cartao = 0;
+int indice_cartao_senha = 0;
 char placa_digitada[8];
+char cartao_digitado [7];
+char senha_cartao_digitado [6];
 int estado_sistema = 0; 
 
 int flag_vaga_especial = 0;
@@ -36,13 +48,31 @@ char lista_placas_especiais[5][8] = {
 
 
 void registra_caractere_confirmado(char letra){
-    if (indice_placa<7){ 
-        //envia_char(letra);
-        lcd_data(letra);
-        placa_digitada[indice_placa] = letra;
-        indice_placa++;
+    
+    if (estado_sistema == DIGITANDO_PLACA){ 
+        if (indice_placa<7){ 
+            //envia_char(letra);
+            lcd_data(letra);
+            placa_digitada[indice_placa] = letra;
+            indice_placa++;
+        }
+    }
+    else if (estado_sistema == CARTAO){
+        if (indice_cartao < 6){
+            lcd_data(letra);
+            cartao_digitado[indice_cartao] = letra;
+            indice_cartao++;
+        }
+    }
+    else if (estado_sistema == CARTAO_SENHA){
+        if (indice_cartao_senha < 5){
+            lcd_data ('*');
+            senha_cartao_digitado[indice_cartao_senha] = letra;
+            indice_cartao_senha++;
+        }
     }
 }
+
 
 void verifica_placa(){
     
@@ -81,13 +111,98 @@ void verifica_placa(){
     }
 }
 
+//Por enquanto verifica só se é numero, depois tem que comparar com as contas reais
+void verifica_cartao(){
+    reset_memoria_teclado();
+    int i;
+    int flag_cartao_invalido = 0;
+    for (i = 0; i < 6; i++){
+        if (cartao_digitado[i]<'0'|| cartao_digitado [i]>'9'){ 
+            flag_cartao_invalido = 1;
+            break;
+        }
+    }
+    if (flag_cartao_invalido){
+        limpa_lcd ();
+        lcd_cmd (0x80);
+        envia_string ("CARTAO INVALIDO");
+        lcd_cmd(0xC0);
+        envia_string ("APENAS NUMEROS");
+        estado_sistema = CARTAO_INVALIDO;
+        TCNT1 = 0; 
+        TCCR1B |= (1 << CS12);
+    }else{
+        limpa_lcd ();
+        lcd_cmd (0x80);
+        envia_string ("SENHA:");
+        lcd_cmd (0XC0);
+        estado_sistema = CARTAO_SENHA;
+    }
+      
+}
+
+
+//Por enquanto verifica só se é numero, depois tem que comparar com as contas reais
+void verifica_senha_cartao (){
+    reset_memoria_teclado();
+    int i;
+    int flag_senha_invalida = 0;
+    for (i = 0; i < 5; i++){
+        if (senha_cartao_digitado[i]<'0'|| senha_cartao_digitado [i]>'9'){ //verificar se o cartao contem apenas numeros
+            flag_senha_invalida = 1;
+            break;
+        }
+    }
+    if (flag_senha_invalida){
+        limpa_lcd ();
+        lcd_cmd (0x80);
+        envia_string ("SENHA INVALIDA");
+        estado_sistema = SENHA_INVALIDA;
+        TCNT1 = 0; 
+        TCCR1B |= (1 << CS12);
+    }else{
+        limpa_lcd ();
+        lcd_cmd (0x80);
+        envia_string ("OK");
+        estado_sistema = 15; //so pra ir pra um estado seguinte por enquanto
+    }
+}
+
+void apaga_caractere_lcd(){
+    
+    if(estado_sistema == DIGITANDO_PLACA){
+        indice_placa--;
+        lcd_cmd (0xC0 + indice_placa);
+        lcd_data (' ');
+        lcd_cmd (0XC0 + indice_placa);
+        placa_digitada [indice_placa] = '\0';
+    }
+    else if (estado_sistema == CARTAO){
+        indice_cartao--;
+        lcd_cmd (0xC0 + indice_cartao);
+        lcd_data (' ');
+        lcd_cmd (0XC0 + indice_cartao);
+        cartao_digitado [indice_cartao] = '\0';
+    }
+    else if (estado_sistema == CARTAO_SENHA){
+        indice_cartao_senha--;
+        lcd_cmd (0xC0 + indice_cartao_senha);
+        lcd_data (' ');
+        lcd_cmd (0XC0 + indice_cartao_senha);
+        senha_cartao_digitado[indice_cartao_senha] = '\0';
+    }
+    
+}
+
 
 ISR (TIMER1_COMPA_vect){
-    if (estado_sistema == DIGITANDO_PLACA || estado_sistema == PLACA_VALIDA){ 
+    if (estado_sistema == DIGITANDO_PLACA || estado_sistema == PLACA_VALIDA || estado_sistema == MENU_PAGAMENTO|| 
+        estado_sistema == CARTAO || estado_sistema == CARTAO_SENHA){ 
+        
         confirmar_tecla = 1;
         TCCR1B &= ~((1 << CS12) | (1 << CS11) | (1 << CS10)); //desliga o timer
     }
-    else if (estado_sistema == PLACA_INVALIDA){
+    else if (estado_sistema == PLACA_INVALIDA || estado_sistema == CARTAO_INVALIDO || estado_sistema == SENHA_INVALIDA){
         tempo_erro++;
         if(tempo_erro >= 4){ //So entra aqui quando contar 4 vezes
             resetar_tela = 1; //ativa a flag para voltar para a tela inicial
@@ -107,6 +222,7 @@ ISR(TIMER3_COMPA_vect) {
     }
 }
 
+
 int main(void) {
     Mensagem msg;
 
@@ -114,25 +230,28 @@ int main(void) {
     
     UART_init();
 
-    /////////  TIMERS //////////
+     /////////  TIMERS //////////
 
       ///// TIMER 0 /////
     TCCR0A = 0;
     TCCR0B = 3; // prescaler de 64
-    
+
       ///// TIMER 1 /////
     TIMSK1 = (1 << 1); // interrupcao timer 1
-    
+    sei(); // Ativa interrupcao global
+
     TCCR1A = 0;
     TCCR1B = (1 << WGM12); //modo ctc
+     
     
     OCR1A = 31249; //31250 - 1 (500ms)
     TCCR1B &= ~((1 << CS12) | (1 << CS11) | (1 << CS10)); // começa desligado
+
     
       ///// TIMER 2 /////
     TCCR2A = 0; 
 	TCCR2B = 2; //Timer 2 com prescaler de 8;
-    
+
       ///// TIMER 3 /////
 
     // 1 SEGUNDO
@@ -145,8 +264,7 @@ int main(void) {
     TIMSK3 |= (1 << OCIE3A);
 
     sei(); // Ativa interrupcao global
-
-
+    
     lcd_init(); //inicia lcd
 
     lcd_cmd(0x80); //posiciona cursor na primeira linha
@@ -157,21 +275,36 @@ int main(void) {
 
     init_gerenciador_msgs();
 
+
     while(1) {
         
         if (estado_sistema == DIGITANDO_PLACA){ 
             roda_teclado();
             
             if (nova_tecla == TECLADO_PRESSIONADO){
-                registra_caractere_confirmado(saida_teclado);
-                UART_transmit(saida_teclado);
+                if (saida_teclado == '*'){
+                    if (indice_placa > 0){
+                    UART_transmit (saida_teclado);
+                    apaga_caractere_lcd();
+                    }
+                }
+                else if (saida_teclado == '#'){ // precisa apertar '#' para confirmar
+                    if(indice_placa == 7){
+                    placa_digitada [7] = '\0';
+                    verifica_placa();
+                    UART_transmit (saida_teclado);
+                    }
+                }
+                else {
+                    registra_caractere_confirmado(saida_teclado);
+                    UART_transmit(saida_teclado);
+                    
+                }
                 nova_tecla = TECLADO_LIVRE;
             }
-                    
-            if(indice_placa == 7){
-                placa_digitada [7] = '\0';
-                verifica_placa();
-            }
+
+            
+           
         }
         else if (estado_sistema == PLACA_INVALIDA && resetar_tela == 1){ //Se a placa é invalida e ja pode resetar a tela
             resetar_tela = 0;
@@ -180,12 +313,14 @@ int main(void) {
             envia_string("DIGITE PLACA");
             lcd_cmd(0xC0); //cursor na segunda linha
             indice_placa = 0;
+            reset_memoria_teclado();
             estado_sistema = DIGITANDO_PLACA; //Volta para o estado inicial de dgitar a placa
         }
         else if (estado_sistema == PLACA_VALIDA) {
             
             roda_teclado();
             if (nova_tecla == TECLADO_PRESSIONADO){
+                UART_transmit(saida_teclado);
                 int tempo_escolhido = 0;
                 int preco_a_pagar = 0;
                 if (saida_teclado == '1'){
@@ -228,7 +363,8 @@ int main(void) {
                         envia_string (msg_valor_pagamento);
                         lcd_cmd(0XC0);
                         envia_string ("1)MOD 2)CRT 3)VR");
-                        estado_sistema = 3;
+                        reset_memoria_teclado();
+                        estado_sistema = MENU_PAGAMENTO;
                     }else{
                         envia_string ("Isento");
                         //continuar logica
@@ -237,6 +373,99 @@ int main(void) {
                 }
                 nova_tecla = TECLADO_LIVRE;
             }
+        }
+        else if (estado_sistema == MENU_PAGAMENTO){
+            roda_teclado();
+            if (nova_tecla == TECLADO_PRESSIONADO){
+                UART_transmit(saida_teclado);
+                if (saida_teclado == '1'){
+                    limpa_lcd();
+                    //Lógica para as moedas
+                }
+                else if (saida_teclado == 'A'){
+                    limpa_lcd();
+                    
+                    lcd_cmd(0X80);
+                    envia_string ("NUMERO CARTAO:");
+                    lcd_cmd(0XC0);
+                    reset_memoria_teclado();
+                    estado_sistema = CARTAO;
+                }
+                else if (saida_teclado == 'D'){
+                    limpa_lcd();
+                    //Lógica para cartao virtual
+                }
+                nova_tecla = TECLADO_LIVRE;
+            }
+        }
+        else if (estado_sistema == CARTAO){
+            roda_teclado();
+            if(nova_tecla == TECLADO_PRESSIONADO){
+                
+                if (saida_teclado == '*'){
+                    if (indice_cartao > 0){
+                        apaga_caractere_lcd();
+                    }
+                }
+
+                else if (saida_teclado == '#'){
+                    if (indice_cartao == 6){
+                        cartao_digitado [6] = '\0';
+                        verifica_cartao();
+                    }
+                }
+                else {
+                    UART_transmit(saida_teclado);
+                    registra_caractere_confirmado(saida_teclado);
+                }
+                nova_tecla = TECLADO_LIVRE;
+            }
+            
+            
+        }
+        else if (estado_sistema == CARTAO_INVALIDO && resetar_tela == 1){ //Se o cartao é invalido e ja pode resetar a tela
+            resetar_tela = 0;
+            limpa_lcd();
+            lcd_cmd(0x80); //posiciona cursor na primeira linha
+            envia_string("NUMERO CARTAO:");
+            lcd_cmd(0xC0); //cursor na segunda linha
+            indice_cartao = 0;
+            reset_memoria_teclado();
+            estado_sistema = CARTAO; //Volta para o estado inicial de dgitar o numero do cartao
+        }
+        else if (estado_sistema == CARTAO_SENHA){
+            roda_teclado ();
+            if (nova_tecla == TECLADO_PRESSIONADO){
+                
+                if (saida_teclado == '*'){
+                    if (indice_cartao_senha > 0){
+                        apaga_caractere_lcd();
+                    }
+                }
+                else if (saida_teclado == '#'){
+                    if (indice_cartao_senha == 5){
+                        senha_cartao_digitado[5] = '\0';
+                        verifica_senha_cartao();
+                    }
+                }
+                else {
+                    UART_transmit(saida_teclado);
+                    registra_caractere_confirmado(saida_teclado);
+                }
+                nova_tecla = TECLADO_LIVRE;
+            }
+        
+            
+        }
+        else if (estado_sistema == SENHA_INVALIDA && resetar_tela == 1){
+            resetar_tela = 0;
+            limpa_lcd();
+            lcd_cmd(0x80); //posiciona cursor na primeira linha
+            envia_string("SENHA:");
+            lcd_cmd(0xC0); //cursor na segunda linha
+            indice_cartao_senha = 0;
+            reset_memoria_teclado();
+            estado_sistema = CARTAO_SENHA; //Volta para o estado inicial de dgitar a senha do cartao
         }
 
         // novo_caracter_recebido_UART();

@@ -26,16 +26,21 @@
 #define AGUARDA_E          11
 #define REQ_PAGAMENTO      12
 #define AGUARDA_P          13
+#define ERRO_DADOS_CARTAO  14
+#define ERRO_SALDO_CARTAO  15
+#define QUER_COMPROVANTE   16
 
 
-
+int estado_sistema = 0; 
 int indice_placa = 0; 
 int indice_cartao = 0;
 int indice_cartao_senha = 0;
 char placa_digitada[8];
 char cartao_digitado [7];
 char senha_cartao_digitado [6];
-int estado_sistema = 0; 
+
+
+
 
 int flag_vaga_especial = 0;
 int resetar_tela = 0;
@@ -204,36 +209,37 @@ void envia_dados_estacionamento(char tempo, int preco){
     char pacote_pagamento [17];
     
     if (estado_sistema == REQ_DADOS_ESTAC){
+        //Formato é 'P''E''PLACA_DO_CARRO''MODALIDADE'
         sprintf(pacote_estacionamento,"PE%s%d", placa_digitada,tempo); //Isso tudo ai vai ter que estar codificado depois
 
         UART_envia_string (pacote_estacionamento);
         limpa_lcd ();
         lcd_cmd (0x80);
-        envia_string ("REGISTRANDO");
+        envia_string ("REGISTRANDO...");
         
-        estado_sistema = AGUARDA_E;
+        estado_sistema = AGUARDA_E; //Estado onde está aguardando o 'S''E' do servidor externo
     }
     else if (estado_sistema == REQ_PAGAMENTO){
-         limpa_lcd ();
+        limpa_lcd ();
         lcd_cmd (0x80);
-        envia_string ("CONFIRMANDO");
+        envia_string ("CONFIRMANDO...");
+        //Formato é 'P''P''NUMERO_CARTAO''SENHA_CARTAO''VALOR'
         sprintf(pacote_pagamento,"PP%s%s%d", cartao_digitado,senha_cartao_digitado,preco); //Isso tudo ai vai ter que estar codificado depois
         UART_envia_string (pacote_pagamento);
-        estado_sistema = AGUARDA_P;
+        estado_sistema = AGUARDA_P; //Estado onde está aguardando o 'S''P' do servidor externo
     }
     
 }
 
-
-
 ISR (TIMER1_COMPA_vect){
-    if (estado_sistema == DIGITANDO_PLACA || estado_sistema == PLACA_VALIDA || estado_sistema == MENU_PAGAMENTO|| 
-        estado_sistema == CARTAO || estado_sistema == CARTAO_SENHA){ 
+    if (estado_sistema == DIGITANDO_PLACA || estado_sistema == PLACA_VALIDA || estado_sistema == MENU_PAGAMENTO|| //depois penso em um jeito mais inteligente de fazer isso kkkkkkkkkkkkkkkkkk bagulho feio
+        estado_sistema == CARTAO || estado_sistema == CARTAO_SENHA || estado_sistema == QUER_COMPROVANTE){ 
         
         confirmar_tecla = 1;
         TCCR1B &= ~((1 << CS12) | (1 << CS11) | (1 << CS10)); //desliga o timer
     }
-    else if (estado_sistema == PLACA_INVALIDA || estado_sistema == CARTAO_INVALIDO || estado_sistema == SENHA_INVALIDA){
+    else if (estado_sistema == PLACA_INVALIDA || estado_sistema == CARTAO_INVALIDO || estado_sistema == SENHA_INVALIDA||estado_sistema == ERRO_SALDO_CARTAO
+            || estado_sistema == ERRO_DADOS_CARTAO){
         tempo_erro++;
         if(tempo_erro >= 4){ //So entra aqui quando contar 4 vezes
             resetar_tela = 1; //ativa a flag para voltar para a tela inicial
@@ -260,6 +266,7 @@ int main(void) {
     signed char tempo_escolhido = -1;
     int preco_a_pagar = 0;
     char eh_cartao = 0;
+    char msg_valor_pagamento[20];
     
     Mensagem msg;
 
@@ -312,14 +319,13 @@ int main(void) {
 
     init_gerenciador_msgs();
 
-
     while(1) {
         
         if (estado_sistema == DIGITANDO_PLACA){ 
             roda_teclado();
             
             if (nova_tecla == TECLADO_PRESSIONADO){
-                if (saida_teclado == '*'){
+                if (saida_teclado == '*'){ // '*' apaga
                     if (indice_placa > 0){
                     UART_transmit (saida_teclado);
                     apaga_caractere_lcd();
@@ -394,7 +400,7 @@ int main(void) {
                 if (tempo_escolhido>=0){
                     limpa_lcd ();
                     lcd_cmd(0x80);
-                    char msg_valor_pagamento[20];
+                    
                     
                     if (preco_a_pagar != 0){
                         sprintf(msg_valor_pagamento, "VALOR: R$%d,%02d", preco_a_pagar / 100, preco_a_pagar % 100);
@@ -404,7 +410,7 @@ int main(void) {
                         reset_memoria_teclado();
                         estado_sistema = MENU_PAGAMENTO;
                     }else{
-                        estado_sistema = REQ_DADOS_ESTAC;
+                        estado_sistema = REQ_DADOS_ESTAC; //Se está isento passa direto os dados do estacionamento para os serv externo
                     }
                     
                 }
@@ -427,6 +433,8 @@ int main(void) {
                     lcd_cmd(0X80);
                     envia_string ("NUMERO CARTAO:");
                     lcd_cmd(0XC0);
+                    indice_cartao = 0;
+                    indice_cartao_senha=0;
                     reset_memoria_teclado();
                     estado_sistema = CARTAO;
                 }
@@ -440,7 +448,7 @@ int main(void) {
         else if (estado_sistema == CARTAO){
             roda_teclado();
             if(nova_tecla == TECLADO_PRESSIONADO){
-                
+              
                 if (saida_teclado == '*'){
                     if (indice_cartao > 0){
                         apaga_caractere_lcd();
@@ -494,7 +502,6 @@ int main(void) {
                 nova_tecla = TECLADO_LIVRE;
             }
         
-            
         }
         else if (estado_sistema == SENHA_INVALIDA && resetar_tela == 1){
             resetar_tela = 0;
@@ -515,51 +522,83 @@ int main(void) {
         else if (estado_sistema == REQ_PAGAMENTO){
             envia_dados_estacionamento(tempo_escolhido, preco_a_pagar);
         }
-        
+
+
+        //Se o sistema está em algum dos estados de erro do pagamento e ja passou o tempo da mensagem na tela:
+        else if ((estado_sistema == ERRO_SALDO_CARTAO|| estado_sistema == ERRO_DADOS_CARTAO) && resetar_tela == 1){  
+            resetar_tela = 0;
+            limpa_lcd();
+            lcd_cmd(0x80); 
+            envia_string(msg_valor_pagamento);
+            lcd_cmd(0xC0);
+            envia_string("1)MOD 2)CRT 3)VR");//Volta para a tela da selecao do metodo de pagamento
+            reset_memoria_teclado();
+            estado_sistema = MENU_PAGAMENTO;
+        }
+        else if (estado_sistema == QUER_COMPROVANTE){
+            roda_teclado();
+            if (nova_tecla == TECLADO_PRESSIONADO){
+                if (saida_teclado == '*'){ //Caso nao queira comprovante, apenas volta para o estado inicial
+                    limpa_lcd();
+                    indice_placa = 0;
+                    reset_memoria_teclado();
+                    lcd_cmd(0x80); //posiciona cursor na primeira linha
+                    envia_string("DIGITE PLACA");
+                    lcd_cmd(0xC0); //cursor na segunda linha
+                    estado_sistema = DIGITANDO_PLACA;
+                }
+                else if (saida_teclado == '#'){
+                    //Dai fazer lógica para impressao do comprovante
+                }
+                
+
+                nova_tecla = TECLADO_LIVRE;
+            }
+        }
 
         // novo_caracter_recebido_UART();
         gerenciar_msgs();
 
-    
         if (novas_mensagens_servidor() > 0){
             msg = le_mensagem();
-            UART_envia_string("MENSAGEMEH:");
-            UART_transmit(msg.tipo);
-            UART_envia_string(msg.string);
 
-            if(estado_sistema == AGUARDA_E && msg.tipo == 'E'){
+            if(estado_sistema == AGUARDA_E && msg.tipo == 'E'){ //Se o tipo da mensagem for 'E', quer dizer que recebeu os dados do estacionamento
                 if (eh_cartao){
-                    estado_sistema = REQ_PAGAMENTO;
-                    
-                    
+                    estado_sistema = REQ_PAGAMENTO; //So envia os dados do pagamento se for por cartao    
                 }else{
-                    estado_sistema = 15;
+                    estado_sistema = 15; //Se nao for por cartao dai tem que ver oq será feito
                 }
             }
-            else if (estado_sistema == AGUARDA_P && msg.tipo == 'P'){
+            else if (estado_sistema == AGUARDA_P && msg.tipo == 'P'){//Se o tipo da mensagem for P, servidor externo está enviando a resposta do pagamento
                 
-                if (msg.string[0] == 'S'){
+                if (msg.string[0] == 'S'){//Se a string for 'S', pagamento foi realizado com sucesso
                     limpa_lcd();
                     lcd_cmd (0x80);
-                    envia_string ("PAGAMENTO OK");
-                    estado_sistema = 15;//So pra ir pra outro estado por enquanto
+                    envia_string ("COMPROVANTE?");
+                    lcd_cmd (0xC0);
+                    envia_string ("*-NAO   #-SIM");
+                    estado_sistema = QUER_COMPROVANTE;
                 }
-                else if (msg.string[0] == 'F'){
+                else if (msg.string[0] == 'F'){//Se a string for 'F', numero ou senha incorretos
                     limpa_lcd();
                     lcd_cmd (0x80);
                     envia_string ("DADOS ERRADOS");
-                    estado_sistema = 16;//So pra ir pra outro estado por enquanto
+                    estado_sistema = ERRO_DADOS_CARTAO;
+                    TCNT1 = 0; //Inicia timer para ficar um tempo com a mensagem "Dados errados"
+                    TCCR1B |= (1 << CS12);
                 }
-                else if (msg.string[0] == 'I'){
+                else if (msg.string[0] == 'I'){//Se a string for 'I', saldo insuficiente
                     limpa_lcd();
                     lcd_cmd (0x80);
                     envia_string ("SEM SALDO");
-                   estado_sistema = 17;//So pra ir pra outro estado por enquanto
+                    estado_sistema = ERRO_SALDO_CARTAO;
+                    TCNT1 = 0; 
+                    TCCR1B |= (1 << CS12);
                 }
             }
-            
-            
         }
+
+
     }
     return 0;
 }

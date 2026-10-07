@@ -29,6 +29,8 @@
 #define ERRO_DADOS_CARTAO  14
 #define ERRO_SALDO_CARTAO  15
 #define QUER_COMPROVANTE   16
+#define CARTAO_VIRTUAL     17
+#define SUCESSO_CART_VIRT  18
 
 
 int estado_sistema = 0; 
@@ -45,6 +47,23 @@ char senha_cartao_digitado [6];
 int flag_vaga_especial = 0;
 int resetar_tela = 0;
 int tempo_erro = 0;
+
+char lista_cartao_virtual[5][8] = {
+	"WCC9850",
+	"PIN0C20",
+	"CAR0230",
+	"VIR7960",
+	"PAR8320" };
+
+
+int saldo_cartao_virtual[5] = {
+	5000, 
+	2000, 
+	3000, 
+	6000, 
+	2000 };
+
+
 
 char lista_placas_especiais[5][8] = {
 	"IOS0098",
@@ -118,7 +137,53 @@ void verifica_placa(){
     }
 }
 
-//Por enquanto verifica só se é numero, depois tem que comparar com as contas reais
+void verifica_cartao_virtual(int preco){
+    int i;
+    char placa_encontrada = 0;
+    int indice_virtual = -1;
+    for (i=0;i<5;i++){
+        if(strcmp(placa_digitada, lista_cartao_virtual[i])==0){
+            placa_encontrada = 1;
+            indice_virtual = i;
+            break;
+        }
+    }
+
+    limpa_lcd();
+    if (placa_encontrada){
+        if(saldo_cartao_virtual [indice_virtual]>= preco){
+            saldo_cartao_virtual [indice_virtual] -= preco;
+            lcd_cmd (0x80);
+            envia_string("PAGAMENTO OK");
+            lcd_cmd (0XC0);
+            char msg_saldo[16];
+            sprintf(msg_saldo, "SALDO:R$%d,%02d", saldo_cartao_virtual[indice_virtual]/100, saldo_cartao_virtual[indice_virtual]%100);
+            envia_string(msg_saldo);
+            estado_sistema = SUCESSO_CART_VIRT;
+            TCNT1 = 0; 
+            TCCR1B |= (1 << CS12);
+            
+        }else{
+            lcd_cmd (0x80);
+            envia_string("SEM CREDITO");
+            estado_sistema = ERRO_SALDO_CARTAO;
+            TCNT1 = 0; 
+            TCCR1B |= (1 << CS12);
+
+        }
+        
+    }else {
+        lcd_cmd (0x80);
+        envia_string("NAO REGISTRADO");
+        estado_sistema = ERRO_DADOS_CARTAO;
+        TCNT1 = 0; 
+        TCCR1B |= (1 << CS12);
+
+    }
+    
+}
+
+//Verifica só se é numero
 void verifica_cartao(){
     reset_memoria_teclado();
     int i;
@@ -149,7 +214,7 @@ void verifica_cartao(){
 }
 
 
-//Por enquanto verifica só se é numero, depois tem que comparar com as contas reais
+//Verifica só se é numero
 void verifica_senha_cartao (){
     reset_memoria_teclado();
     int i;
@@ -239,7 +304,7 @@ ISR (TIMER1_COMPA_vect){
         TCCR1B &= ~((1 << CS12) | (1 << CS11) | (1 << CS10)); //desliga o timer
     }
     else if (estado_sistema == PLACA_INVALIDA || estado_sistema == CARTAO_INVALIDO || estado_sistema == SENHA_INVALIDA||estado_sistema == ERRO_SALDO_CARTAO
-            || estado_sistema == ERRO_DADOS_CARTAO){
+            || estado_sistema == ERRO_DADOS_CARTAO || estado_sistema == SUCESSO_CART_VIRT){
         tempo_erro++;
         if(tempo_erro >= 4){ //So entra aqui quando contar 4 vezes
             resetar_tela = 1; //ativa a flag para voltar para a tela inicial
@@ -396,6 +461,15 @@ int main(void) {
                         tempo_escolhido = 3; //1h e 30min a 2h
                     }
                 }
+                else if (saida_teclado == '*'){ //Se apertar para voltar
+                    limpa_lcd();
+                    lcd_cmd(0x80); 
+                    envia_string("DIGITE PLACA");
+                    lcd_cmd(0xC0); 
+                    indice_placa = 0;
+                    reset_memoria_teclado();
+                    estado_sistema = DIGITANDO_PLACA;
+                }
             
                 if (tempo_escolhido>=0){
                     limpa_lcd ();
@@ -427,7 +501,7 @@ int main(void) {
                     limpa_lcd();
                     //Lógica para as moedas
                 }
-                else if (saida_teclado == 'A'){
+                else if (saida_teclado == 'A'){//Cartao
                     eh_cartao = 1;
                     limpa_lcd();
                     lcd_cmd(0X80);
@@ -438,9 +512,23 @@ int main(void) {
                     reset_memoria_teclado();
                     estado_sistema = CARTAO;
                 }
-                else if (saida_teclado == 'D'){
+                else if (saida_teclado == 'D'){//Cartao virtual
+                    verifica_cartao_virtual(preco_a_pagar);
+                }
+                else if (saida_teclado == '*'){//Volta para a tela anterior
                     limpa_lcd();
-                    //Lógica para cartao virtual
+                    lcd_cmd(0x80);
+                    if (flag_vaga_especial){
+                        envia_string("1)30min(R$0)");
+                        lcd_cmd(0xC0);
+                        envia_string("2)1h 3)2h 4)>2h");
+                    }else{
+                    envia_string("TEMPO: 1)30min");
+                    lcd_cmd(0xC0);
+                    envia_string("2)1h 3)1h30 4)2h");
+                    }
+                    reset_memoria_teclado();
+                    estado_sistema = PLACA_VALIDA;
                 }
                 nova_tecla = TECLADO_LIVRE;
             }
@@ -555,6 +643,10 @@ int main(void) {
                 nova_tecla = TECLADO_LIVRE;
             }
         }
+        else if (estado_sistema == SUCESSO_CART_VIRT && resetar_tela == 1){
+            resetar_tela = 0;
+            estado_sistema = REQ_DADOS_ESTAC;
+        }
 
         // novo_caracter_recebido_UART();
         gerenciar_msgs();
@@ -565,8 +657,13 @@ int main(void) {
             if(estado_sistema == AGUARDA_E && msg.tipo == 'E'){ //Se o tipo da mensagem for 'E', quer dizer que recebeu os dados do estacionamento
                 if (eh_cartao){
                     estado_sistema = REQ_PAGAMENTO; //So envia os dados do pagamento se for por cartao    
-                }else{
-                    estado_sistema = 15; //Se nao for por cartao dai tem que ver oq será feito
+                }else{ //Se nao for por cartao dai vai direto para o comprovante
+                    limpa_lcd();
+                    lcd_cmd (0x80);
+                    envia_string ("COMPROVANTE?");
+                    lcd_cmd (0xC0);
+                    envia_string ("*-NAO   #-SIM");
+                    estado_sistema = QUER_COMPROVANTE; 
                 }
             }
             else if (estado_sistema == AGUARDA_P && msg.tipo == 'P'){//Se o tipo da mensagem for P, servidor externo está enviando a resposta do pagamento

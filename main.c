@@ -22,10 +22,12 @@
 #define CARTAO_SENHA       7 
 #define CARTAO_INVALIDO    8
 #define SENHA_INVALIDA     9
-// 0 = digitando placa
-// 1 = valida
-//2 = placa invalida
-// 3 = selecioando tipo pagamento
+#define REQ_DADOS_ESTAC    10
+#define AGUARDA_E          11
+#define REQ_PAGAMENTO      12
+#define AGUARDA_P          13
+
+
 
 int indice_placa = 0; 
 int indice_cartao = 0;
@@ -164,9 +166,12 @@ void verifica_senha_cartao (){
         limpa_lcd ();
         lcd_cmd (0x80);
         envia_string ("OK");
-        estado_sistema = 15; //so pra ir pra um estado seguinte por enquanto
+        estado_sistema = REQ_DADOS_ESTAC;
     }
 }
+
+
+
 
 void apaga_caractere_lcd(){
     
@@ -193,6 +198,32 @@ void apaga_caractere_lcd(){
     }
     
 }
+
+void envia_dados_estacionamento(char tempo, int preco){
+    char pacote_estacionamento[11];
+    char pacote_pagamento [17];
+    
+    if (estado_sistema == REQ_DADOS_ESTAC){
+        sprintf(pacote_estacionamento,"PE%s%d", placa_digitada,tempo); //Isso tudo ai vai ter que estar codificado depois
+
+        UART_envia_string (pacote_estacionamento);
+        limpa_lcd ();
+        lcd_cmd (0x80);
+        envia_string ("REGISTRANDO");
+        
+        estado_sistema = AGUARDA_E;
+    }
+    else if (estado_sistema == REQ_PAGAMENTO){
+         limpa_lcd ();
+        lcd_cmd (0x80);
+        envia_string ("CONFIRMANDO");
+        sprintf(pacote_pagamento,"PP%s%s%d", cartao_digitado,senha_cartao_digitado,preco); //Isso tudo ai vai ter que estar codificado depois
+        UART_envia_string (pacote_pagamento);
+        estado_sistema = AGUARDA_P;
+    }
+    
+}
+
 
 
 ISR (TIMER1_COMPA_vect){
@@ -223,7 +254,13 @@ ISR(TIMER3_COMPA_vect) {
 }
 
 
+
 int main(void) {
+    
+    signed char tempo_escolhido = -1;
+    int preco_a_pagar = 0;
+    char eh_cartao = 0;
+    
     Mensagem msg;
 
     PINH = 0xFF;
@@ -321,39 +358,40 @@ int main(void) {
             roda_teclado();
             if (nova_tecla == TECLADO_PRESSIONADO){
                 UART_transmit(saida_teclado);
-                int tempo_escolhido = 0;
-                int preco_a_pagar = 0;
+                tempo_escolhido = -1;
+                preco_a_pagar = 0;
+
                 if (saida_teclado == '1'){
                     if (flag_vaga_especial)preco_a_pagar = 0;
                     else preco_a_pagar = 200;
-                    tempo_escolhido = 30; //30min
+                    tempo_escolhido = 0; //30min
                 }
                 else if (saida_teclado == 'A'){
                     if (flag_vaga_especial)preco_a_pagar = 200;
                     else preco_a_pagar = 350;
-                    tempo_escolhido = 60;
+                    tempo_escolhido = 1; //30min a 1h
                 }
                 else if (saida_teclado == 'D'){
                     if (flag_vaga_especial){
                         preco_a_pagar = 350;
-                        tempo_escolhido = 120;
+                        tempo_escolhido = 3; //1h e 30min a 2h
 
                     }else {
                         preco_a_pagar = 450;
-                        tempo_escolhido = 90;
+                        tempo_escolhido = 2; //1h a 1h e 30min
                     }
                 }
                 else if (saida_teclado =='G'){
                     if (flag_vaga_especial){
                         preco_a_pagar = 450;
-                        tempo_escolhido = 200; //valor só pra indicar que é >2h
+                        tempo_escolhido = 4; //ilimitado
                     }else {
                         preco_a_pagar = 600;
-                        tempo_escolhido = 120;
+                        tempo_escolhido = 3; //1h e 30min a 2h
                     }
                 }
             
-                if (tempo_escolhido>0){
+                if (tempo_escolhido>=0){
                     limpa_lcd ();
                     lcd_cmd(0x80);
                     char msg_valor_pagamento[20];
@@ -366,8 +404,7 @@ int main(void) {
                         reset_memoria_teclado();
                         estado_sistema = MENU_PAGAMENTO;
                     }else{
-                        envia_string ("Isento");
-                        //continuar logica
+                        estado_sistema = REQ_DADOS_ESTAC;
                     }
                     
                 }
@@ -376,15 +413,17 @@ int main(void) {
         }
         else if (estado_sistema == MENU_PAGAMENTO){
             roda_teclado();
+            
             if (nova_tecla == TECLADO_PRESSIONADO){
+                eh_cartao = 0;
                 UART_transmit(saida_teclado);
                 if (saida_teclado == '1'){
                     limpa_lcd();
                     //Lógica para as moedas
                 }
                 else if (saida_teclado == 'A'){
+                    eh_cartao = 1;
                     limpa_lcd();
-                    
                     lcd_cmd(0X80);
                     envia_string ("NUMERO CARTAO:");
                     lcd_cmd(0XC0);
@@ -468,17 +507,62 @@ int main(void) {
             estado_sistema = CARTAO_SENHA; //Volta para o estado inicial de dgitar a senha do cartao
         }
 
+        else if (estado_sistema == REQ_DADOS_ESTAC){
+        
+            envia_dados_estacionamento(tempo_escolhido, preco_a_pagar);    
+            
+        }
+        else if (estado_sistema == REQ_PAGAMENTO){
+            envia_dados_estacionamento(tempo_escolhido, preco_a_pagar);
+        }
+        
+
         // novo_caracter_recebido_UART();
         gerenciar_msgs();
 
+    
         if (novas_mensagens_servidor() > 0){
             msg = le_mensagem();
-            limpa_lcd();
-            lcd_cmd(0x80); //posiciona cursor na primeira linha
-            envia_string(msg.tipo);
-            lcd_cmd(0xC0); //cursor na segunda linha
-            envia_string(msg.string);
+            UART_envia_string("MENSAGEMEH:");
+            UART_transmit(msg.tipo);
+            UART_envia_string(msg.string);
+
+            if(estado_sistema == AGUARDA_E && msg.tipo == 'E'){
+                if (eh_cartao){
+                    estado_sistema = REQ_PAGAMENTO;
+                    
+                    
+                }else{
+                    estado_sistema = 15;
+                }
+            }
+            else if (estado_sistema == AGUARDA_P && msg.tipo == 'P'){
+                
+                if (msg.string[0] == 'S'){
+                    limpa_lcd();
+                    lcd_cmd (0x80);
+                    envia_string ("PAGAMENTO OK");
+                    estado_sistema = 15;//So pra ir pra outro estado por enquanto
+                }
+                else if (msg.string[0] == 'F'){
+                    limpa_lcd();
+                    lcd_cmd (0x80);
+                    envia_string ("DADOS ERRADOS");
+                    estado_sistema = 16;//So pra ir pra outro estado por enquanto
+                }
+                else if (msg.string[0] == 'I'){
+                    limpa_lcd();
+                    lcd_cmd (0x80);
+                    envia_string ("SEM SALDO");
+                   estado_sistema = 17;//So pra ir pra outro estado por enquanto
+                }
+            }
+            
+            
         }
     }
     return 0;
 }
+
+
+

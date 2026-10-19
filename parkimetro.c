@@ -11,6 +11,7 @@
 // Rua ruas[3] = {osvaldo, sarmento, joao};
 
 char num_carros = 0;
+Carro carros[NUM_MAX_CARROS];
 
 void adiciona_carro(char placa[7], char especial, char tempo_contratado, char rua){
     char hora_atual[6];

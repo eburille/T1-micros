@@ -6,18 +6,21 @@
 #define SARMENT         1
 #define JPESSOA         2
 
-#define t_30_min       30
-#define t_1_hora       60
-#define t_1h_30m       90
-#define t_2_hora      120
-#define t_2_mais      500
+#define t_30_min        0 //  30
+#define t_1_hora        1 //  60
+#define t_1h_30m        2 //  90
+#define t_2_hora        3 // 120
+#define t_ilimitado     4 // 500
 
 #define TOLERANCIA_MIN  3
 
 #define REGULAR         0
 #define IRREGULAR       1
 
-#define NUM_MAX_CARROS 60
+#define N_ESPECIAL      0
+#define ESPECIAL        1
+
+#define NUM_MAX_CARROS 30
 
 typedef struct{
     char placa[7];

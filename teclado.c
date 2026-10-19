@@ -249,7 +249,7 @@ void roda_teclado_numerico() {
 void reset_memoria_teclado() {
     tecla_pressionada = '\0';
     tecla_pendente    = '\0';
-    tecla_anterior    = '\0';
+    //tecla_anterior    = '\0';
     toques_em_sequencia = 0;
     nova_tecla = TECLADO_LIVRE;
     saida_teclado = '\0';

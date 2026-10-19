@@ -41,6 +41,10 @@ char placa_digitada[8];
 char cartao_digitado [7];
 char senha_cartao_digitado [6];
 
+int contador_inatividade = 0;
+char flag_atualiza_relogio = 0;
+char sistema_inativo = 1;
+
 
 
 
@@ -271,7 +275,7 @@ void apaga_caractere_lcd(){
 
 void envia_dados_estacionamento(char tempo, int preco){
     char pacote_estacionamento[11];
-    char pacote_pagamento [17];
+    
     
     if (estado_sistema == REQ_DADOS_ESTAC){
         //Formato é 'P''E''PLACA_DO_CARRO''MODALIDADE'
@@ -287,10 +291,15 @@ void envia_dados_estacionamento(char tempo, int preco){
     else if (estado_sistema == REQ_PAGAMENTO){
         limpa_lcd ();
         lcd_cmd (0x80);
+        char pacote_dados [15];
         envia_string ("CONFIRMANDO...");
-        //Formato é 'P''P''NUMERO_CARTAO''SENHA_CARTAO''VALOR'
-        sprintf(pacote_pagamento,"PP%s%s%d", cartao_digitado,senha_cartao_digitado,preco); //Isso tudo ai vai ter que estar codificado depois
-        UART_envia_string (pacote_pagamento);
+        int tamanho_payload = sprintf(pacote_dados, "%s%s%d", cartao_digitado, senha_cartao_digitado, preco);
+        //Formato é 'P''P''N_BYTES''NUMERO_CARTAO''SENHA_CARTAO''VALOR'
+        UART_transmit ('P');
+        UART_transmit ('P');
+        UART_transmit((char)tamanho_payload);
+        UART_envia_string(pacote_dados);
+
         estado_sistema = AGUARDA_P; //Estado onde está aguardando o 'S''P' do servidor externo
     }
     
@@ -318,6 +327,9 @@ ISR(TIMER3_COMPA_vect) {
     static char contador_segundos = 0;
 
     contador_segundos++;
+    contador_inatividade++; //conta o tempo que o display ta inativo
+    flag_atualiza_relogio = 1; //avisa que passou um segundo
+
     if (contador_segundos >= 60) {
         contador_segundos = 0;
         prox_minuto();
@@ -386,13 +398,45 @@ int main(void) {
 
     while(1) {
         
+        if (contador_inatividade >=30 && sistema_inativo == 0){ //30 segundos sem ninguem tocar no teclado
+            limpa_lcd();
+            estado_sistema = DIGITANDO_PLACA; //Volta para o estado inicial de digitar a placa
+            indice_placa = 0;
+            reset_memoria_teclado ();
+            sistema_inativo = 1;
+            flag_atualiza_relogio = 1;
+        }
+
+
         if (estado_sistema == DIGITANDO_PLACA){ 
+            
+            if (sistema_inativo == 1 && flag_atualiza_relogio == 1){ //Se estiver inativa, exibe o relogio
+                flag_atualiza_relogio = 0;
+                char msg_hora[17];
+                sprintf(msg_hora, " %02d/%02d  %02d:%02d ", dia, mes, hora, min);
+                lcd_cmd(0x80);
+                envia_string(msg_hora);
+                lcd_cmd(0xC0);
+                envia_string("PRESSIONE TECLA");
+            }
+
+            
             roda_teclado();
             
             if (nova_tecla == TECLADO_PRESSIONADO){
-                if (saida_teclado == '*'){ // '*' apaga
+                contador_inatividade = 0; //qnd alguma tecla for pressionada, o contador de inatividade
+                if (sistema_inativo == 1){
+                    sistema_inativo = 0;
+                    nova_tecla = TECLADO_LIVRE; //descarta a primeira tecla pressionada (ela é usada só para tirar o sistema da inatividade)
+                    limpa_lcd();
+                    lcd_cmd(0x80);
+                    envia_string("DIGITE PLACA");
+                    lcd_cmd(0xC0);
+                }
+            
+                else if (saida_teclado == '*'){ // '*' apaga
                     if (indice_placa > 0){
-                    UART_transmit (saida_teclado);
+                    //UART_transmit (saida_teclado);
                     apaga_caractere_lcd();
                     }
                 }
@@ -400,12 +444,12 @@ int main(void) {
                     if(indice_placa == 7){
                     placa_digitada [7] = '\0';
                     verifica_placa();
-                    UART_transmit (saida_teclado);
+                    //UART_transmit (saida_teclado);
                     }
                 }
                 else {
                     registra_caractere_confirmado(saida_teclado);
-                    UART_transmit(saida_teclado);
+                    //UART_transmit(saida_teclado);
                     
                 }
                 nova_tecla = TECLADO_LIVRE;
@@ -428,7 +472,8 @@ int main(void) {
             
             roda_teclado();
             if (nova_tecla == TECLADO_PRESSIONADO){
-                UART_transmit(saida_teclado);
+                //UART_transmit(saida_teclado);
+                contador_inatividade = 0;
                 tempo_escolhido = -1;
                 preco_a_pagar = 0;
 
@@ -495,8 +540,9 @@ int main(void) {
             roda_teclado();
             
             if (nova_tecla == TECLADO_PRESSIONADO){
+                contador_inatividade = 0;
                 eh_cartao = 0;
-                UART_transmit(saida_teclado);
+                //UART_transmit(saida_teclado);
                 if (saida_teclado == '1'){
                     limpa_lcd();
                     //Lógica para as moedas
@@ -536,6 +582,7 @@ int main(void) {
         else if (estado_sistema == CARTAO){
             roda_teclado_numerico();
             if(nova_tecla == TECLADO_PRESSIONADO){
+                contador_inatividade = 0;
               
                 if (saida_teclado == '*'){
                     if (indice_cartao > 0){
@@ -550,11 +597,13 @@ int main(void) {
                     }
                 }
                 else {
-                    UART_transmit(saida_teclado);
+                    //UART_transmit(saida_teclado);
                     registra_caractere_confirmado(saida_teclado);
                 }
                 nova_tecla = TECLADO_LIVRE;
-            } 
+            }
+            
+            
         }
         else if (estado_sistema == CARTAO_INVALIDO && resetar_tela == 1){ //Se o cartao é invalido e ja pode resetar a tela
             resetar_tela = 0;
@@ -567,8 +616,9 @@ int main(void) {
             estado_sistema = CARTAO; //Volta para o estado inicial de dgitar o numero do cartao
         }
         else if (estado_sistema == CARTAO_SENHA){
-            roda_teclado_numerico();
+            roda_teclado_numerico ();
             if (nova_tecla == TECLADO_PRESSIONADO){
+                contador_inatividade = 0;
                 
                 if (saida_teclado == '*'){
                     if (indice_cartao_senha > 0){
@@ -582,7 +632,7 @@ int main(void) {
                     }
                 }
                 else {
-                    UART_transmit(saida_teclado);
+                    //UART_transmit(saida_teclado);
                     registra_caractere_confirmado(saida_teclado);
                 }
                 nova_tecla = TECLADO_LIVRE;
@@ -624,6 +674,7 @@ int main(void) {
         else if (estado_sistema == QUER_COMPROVANTE){
             roda_teclado();
             if (nova_tecla == TECLADO_PRESSIONADO){
+                contador_inatividade = 0;
                 if (saida_teclado == '*'){ //Caso nao queira comprovante, apenas volta para o estado inicial
                     limpa_lcd();
                     indice_placa = 0;
@@ -690,6 +741,10 @@ int main(void) {
                     TCNT1 = 0; 
                     TCCR1B |= (1 << CS12);
                 }
+            }
+            else if (msg.tipo == 'H'){ // 
+                ajustar_hora(msg.string); 
+                UART_envia_string ("PH"); //mensagem de resposta para o servidor externo
             }
         }
 

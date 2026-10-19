@@ -235,6 +235,17 @@ void roda_teclado() {
     tecla_anterior = tecla_pressionada;
 }
 
+void roda_teclado_numerico() {
+    
+    tecla_pressionada = ler_teclado();
+        
+    if(tecla_pressionada != '\0' && (tecla_pressionada != tecla_anterior)){      
+        saida_teclado = tecla_pressionada;
+        nova_tecla = TECLADO_PRESSIONADO;
+    }
+    tecla_anterior = tecla_pressionada;
+}
+
 void reset_memoria_teclado() {
     tecla_pressionada = '\0';
     tecla_pendente    = '\0';

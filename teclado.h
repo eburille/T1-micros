@@ -12,6 +12,7 @@ void init_teclado();
 char ler_teclado();
 char decodifica_tecla(char tecla);
 void roda_teclado();
+void roda_teclado_numerico();
 void reset_memoria_teclado();
 
 #endif

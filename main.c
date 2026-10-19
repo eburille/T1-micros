@@ -534,7 +534,7 @@ int main(void) {
             }
         }
         else if (estado_sistema == CARTAO){
-            roda_teclado();
+            roda_teclado_numerico();
             if(nova_tecla == TECLADO_PRESSIONADO){
               
                 if (saida_teclado == '*'){
@@ -554,9 +554,7 @@ int main(void) {
                     registra_caractere_confirmado(saida_teclado);
                 }
                 nova_tecla = TECLADO_LIVRE;
-            }
-            
-            
+            } 
         }
         else if (estado_sistema == CARTAO_INVALIDO && resetar_tela == 1){ //Se o cartao é invalido e ja pode resetar a tela
             resetar_tela = 0;
@@ -569,7 +567,7 @@ int main(void) {
             estado_sistema = CARTAO; //Volta para o estado inicial de dgitar o numero do cartao
         }
         else if (estado_sistema == CARTAO_SENHA){
-            roda_teclado ();
+            roda_teclado_numerico();
             if (nova_tecla == TECLADO_PRESSIONADO){
                 
                 if (saida_teclado == '*'){

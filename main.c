@@ -12,6 +12,7 @@
 #include "mensagem.h"
 #include "buffer_circular.h"
 #include "parkimetro.h"
+#include "led.h"
 
 #define DIGITANDO_PLACA     0
 #define SELECAO_TEMPO        1
@@ -322,6 +323,7 @@ ISR (TIMER1_COMPA_vect){
 ISR(TIMER3_COMPA_vect) {
     static char contador_segundos = 0;
 
+    toggle_led();
     contador_segundos++;
     contador_inatividade++; //conta o tempo que o display ta inativo
     flag_atualiza_relogio = 1; //avisa que passou um segundo
@@ -382,6 +384,8 @@ int main(void) {
 
     sei(); // Ativa interrupcao global
     
+    init_led();    
+
     lcd_init(); //inicia lcd
 
     lcd_cmd(PRIMEIRA_LINHA); //posiciona cursor na primeira linha

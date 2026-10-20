@@ -770,6 +770,7 @@ int main(void) {
                 ajustar_hora(msg.string); 
                 UART_envia_string ("PH"); //mensagem de resposta para o servidor externo
             }
+            UART_envia_string("\nMENSAGEM RECEBIDA");
         }
 
 

@@ -2,7 +2,7 @@
 #include "uart_lib.h"
 #include <avr/interrupt.h>
 
-#define BAUD 9600
+#define BAUD 19200
 #define UBRR_VALUE ((F_CPU / (16UL * BAUD)) - 1)
 
 #define ESPERA              0
@@ -17,7 +17,7 @@ void UART_init(){
     UCSR0B = (1 << RXEN0) | (1 << TXEN0) | (1 << RXCIE0);
 
     // 8 bits, 1 stop bit, sem paridade
-    UCSR0C = (1 << UCSZ01) | (1 << UCSZ00);
+    UCSR0C = (1 << UPM01) | (1 << UPM00) | (1 << UCSZ01) | (1 << UCSZ00);
 }
 
 void UART_transmit(char data)

@@ -42,7 +42,7 @@ void proc_caracter(){
         mensagem_recebida.string[string_index] = '\0';
         string_index = 0;
         estado_gerenciador = MENSAGEM_RECEBIDA;
-        UART_envia_string("\nMENSAGEM RECEBIDA");
+        // UART_envia_string("\nMENSAGEM RECEBIDA");
         return;
     } 
 
@@ -56,8 +56,8 @@ void proc_caracter(){
     string_index++;
     num_caracteres_a_receber--;
 
-    UART_envia_string("\nCaracter recebido, faltam: ");
-    UART_transmit(num_caracteres_a_receber + 48);
+    // UART_envia_string("\nCaracter recebido, faltam: ");
+    // UART_transmit(num_caracteres_a_receber + 48);
 }
 
 void verifica_UART(){
@@ -74,7 +74,7 @@ void verifica_UART(){
 
     if (c == CHAR_NOVA_MSG){
         estado_gerenciador = RECEBENDO_TIPO_MENSAGEM;
-        UART_envia_string("TIPO MSG\n");
+        // UART_envia_string("TIPO MSG\n");
     }
     
 }
@@ -93,35 +93,35 @@ void proc_tipo_mensagem(){
         case DADOS_ESTACIONAMENTO:
             num_caracteres_a_receber = (int) DADOS_ESTACIONAMENTO_N_BYTES;
             estado_gerenciador = (int)MENSAGEM_RECEBIDA;
-            UART_envia_string("Dados estacionamento\n");
+            // UART_envia_string("Dados estacionamento\n");
             break;
             
         case PAGAMENTO:
             num_caracteres_a_receber = (int)PAGAMENTO_N_BYTES;
             estado_gerenciador = (int)RECEBENDO_MENSAGEM;
-            UART_envia_string("Dados Pagamento\n");
+            // UART_envia_string("Dados Pagamento\n");
             break;
             
         case IMPRESSAO_COMP:
             num_caracteres_a_receber = (int)IMPRESSAO_COMPN_N_BYTES;
             estado_gerenciador = (int)MENSAGEM_RECEBIDA;
-            UART_envia_string("Dados impressao\n");
+            // UART_envia_string("Dados impressao\n");
             break;
 
         case HORARIO:
             num_caracteres_a_receber = (int)HORARION_N_BYTES;
             estado_gerenciador = (int)RECEBENDO_MENSAGEM;
-            UART_envia_string("Dados hora\n");
+            //UART_envia_string("Dados hora\n");
             break;
 
         case CONDICAO_VIA:
             num_caracteres_a_receber = (int)CONDICAO_VIA_N_BYTES;
             estado_gerenciador = (int)RECEBENDO_N_BYTES_MENSAGEM_VIA;
-            UART_envia_string("Dados Via\n");
+            // UART_envia_string("Dados Via\n");
             break;
 
         default:
-            UART_envia_string("Caracter errado\n");
+            // UART_envia_string("Caracter errado\n");
             break;
          
     }
@@ -131,7 +131,6 @@ void gerenciar_msgs(){
     switch (estado_gerenciador){
         case ESPERA:
             verifica_UART();
-            // UART_transmit('A');
             break;
 
         case RECEBENDO_MENSAGEM:
@@ -139,8 +138,6 @@ void gerenciar_msgs(){
             break;
         
         case MENSAGEM_RECEBIDA:
-            UART_envia_string("ESPERA\n");
-            
             adiciona_mensagem(mensagem_recebida);
             estado_gerenciador = ESPERA;
             break;

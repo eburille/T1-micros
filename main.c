@@ -33,8 +33,6 @@
 #define QUER_COMPROVANTE   16
 #define CARTAO_VIRTUAL     17
 #define SUCESSO_CART_VIRT  18
-#define SELECAO_RUA        20
-
 
 int estado_sistema = 0; 
 int indice_placa = 0; 
@@ -127,13 +125,19 @@ void verifica_placa(){
                 break;
             }
         }
-
+        
         limpa_lcd();
-        lcd_cmd(PRIMEIRA_LINHA);
-        envia_string("0)OSV  1)SARM");
-        lcd_cmd(SEGUNDA_LINHA);
-        envia_string("2)JaoP.");
-        estado_sistema = SELECAO_RUA;
+        lcd_cmd(PRIMEIRA_LINHA); 
+        if (flag_vaga_especial){
+            envia_string("1)30min(R$0)");
+            lcd_cmd(SEGUNDA_LINHA);
+            envia_string("2)1h 3)2h 4)>2h");
+        }else{
+            envia_string("TEMPO: 1)30min");
+            lcd_cmd(SEGUNDA_LINHA);
+            envia_string("2)1h 3)1h30 4)2h");
+        }
+        estado_sistema = SELECAO_TEMPO;
     }
 }
 
@@ -340,7 +344,6 @@ int main(void) {
     
     signed char tempo_escolhido = -1;
     int preco_a_pagar = 0;
-    char eh_cartao = 0;
     char msg_valor_pagamento[20];
     
     Mensagem msg;
@@ -467,39 +470,6 @@ int main(void) {
             estado_sistema = DIGITANDO_PLACA; //Volta para o estado inicial de dgitar a placa
         }
 
-        else if (estado_sistema == SELECAO_RUA) {
-            roda_teclado_numerico();
-            if (nova_tecla == TECLADO_PRESSIONADO){
-                if (saida_teclado == '*'){ // '*' volta para o inicio
-                    resetar_tela = 0;
-                    limpa_lcd();
-                    lcd_cmd(PRIMEIRA_LINHA); //posiciona cursor na primeira linha
-                    envia_string("DIGITE PLACA");
-                    lcd_cmd(SEGUNDA_LINHA); //cursor na segunda linha
-                    indice_placa = 0;
-                    reset_memoria_teclado();
-                    estado_sistema = DIGITANDO_PLACA; //Volta para o estado inicial de dgitar a placa
-                } else if ( (saida_teclado >= '0') && (saida_teclado <= '2')) {
-                    rua_escolhida = saida_teclado;
-                    limpa_lcd();
-                    lcd_cmd(PRIMEIRA_LINHA); 
-                    if (flag_vaga_especial){
-                        envia_string("1)30min(R$0)");
-                        lcd_cmd(SEGUNDA_LINHA);
-                        envia_string("2)1h 3)2h 4)>2h");
-                    }else{
-                        envia_string("TEMPO: 1)30min");
-                        lcd_cmd(SEGUNDA_LINHA);
-                        envia_string("2)1h 3)1h30 4)2h");
-                    }
-                    estado_sistema = SELECAO_TEMPO;
-                    UART_transmit(saida_teclado);
-                    reset_memoria_teclado();
-                }
-                nova_tecla = TECLADO_LIVRE;
-            }
-        }
-
         else if (estado_sistema == SELECAO_TEMPO) {
             
             roda_teclado();
@@ -540,12 +510,11 @@ int main(void) {
                 }
                 else if (saida_teclado == '*'){ //Se apertar para voltar
                     limpa_lcd();
-                    lcd_cmd(PRIMEIRA_LINHA);
-                    envia_string("0)OSV  1)SARM");
-                    lcd_cmd(SEGUNDA_LINHA);
-                    envia_string("2)JP");
-                    reset_memoria_teclado();
-                    estado_sistema = SELECAO_RUA;
+                    lcd_cmd(PRIMEIRA_LINHA); //posiciona cursor na primeira linha
+                    envia_string("DIGITE PLACA");
+                    lcd_cmd(SEGUNDA_LINHA); //cursor na segunda linha
+                    indice_placa = 0;
+                    estado_sistema = DIGITANDO_PLACA;
                 }
                 
 
@@ -574,14 +543,12 @@ int main(void) {
             
             if (nova_tecla == TECLADO_PRESSIONADO){
                 contador_inatividade = 0;
-                eh_cartao = 0;
                 //UART_transmit(saida_teclado);
                 if (saida_teclado == '1'){
                     limpa_lcd();
                     //Lógica para as moedas
                 }
                 else if (saida_teclado == 'A'){//Cartao
-                    eh_cartao = 1;
                     limpa_lcd();
                     lcd_cmd(PRIMEIRA_LINHA);
                     envia_string ("NUMERO CARTAO:");

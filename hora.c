@@ -22,7 +22,7 @@ void ajustar_hora(char string[6]){
 int calc_delta_time_min(char hora_entrada[6]){    
     char dia_inicial = hora_entrada[0];
     char mes_inicial = hora_entrada[1];
-    char ano_inicial = hora_entrada[2] << 8 | hora_entrada[3];
+    int ano_inicial = hora_entrada[2] << 8 | hora_entrada[3];
     char hora_inicial = hora_entrada[4];
     char min_inicial = hora_entrada[5];
 

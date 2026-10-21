@@ -15,7 +15,7 @@
 #include "led.h"
 
 #define DIGITANDO_PLACA     0
-#define SELECAO_TEMPO        1
+#define SELECAO_TEMPO       1
 #define PLACA_INVALIDA      2
 #define MENU_PAGAMENTO      3
 #define MOEDA               4
@@ -33,14 +33,22 @@
 #define QUER_COMPROVANTE   16
 #define CARTAO_VIRTUAL     17
 #define SUCESSO_CART_VIRT  18
+#define ADM_SENHA          19
+#define ADM_AJUSTE_TEMPO   20
+#define ADM_MENU           21
+
 
 int estado_sistema = 0; 
 int indice_placa = 0; 
 int indice_cartao = 0;
 int indice_cartao_senha = 0;
+int indice_senha_adm = 0;
+int indice_ajuste_tempo = 0;
 char placa_digitada[8];
 char cartao_digitado [7];
 char senha_cartao_digitado [6];
+char senha_adm_digitada [6];
+char ajuste_tempo [13];
 
 int contador_inatividade = 0;
 char flag_atualiza_relogio = 0;
@@ -100,12 +108,38 @@ void registra_caractere_confirmado(char letra){
             indice_cartao_senha++;
         }
     }
+    else if (estado_sistema == ADM_SENHA){
+        if (indice_senha_adm < 5){
+            lcd_data ('*');
+            senha_adm_digitada [indice_senha_adm] = letra;
+            indice_senha_adm++;
+        }
+    }
+    else if (estado_sistema == ADM_AJUSTE_TEMPO){
+        if (indice_ajuste_tempo < 12){
+            lcd_data (letra);
+            ajuste_tempo [indice_ajuste_tempo] = letra;
+            indice_ajuste_tempo++;
+        }
+    }
 }
 
 
 void verifica_placa(){
     
     reset_memoria_teclado();
+    
+    //Caso esteja tentando logar na conta de adm
+    if (strcmp(placa_digitada, "ADMPARK")==0){
+        limpa_lcd();
+        lcd_cmd(PRIMEIRA_LINHA);
+        envia_string("SENHA:");
+        lcd_cmd (SEGUNDA_LINHA);
+        estado_sistema = ADM_SENHA;
+        indice_senha_adm = 0;
+        return;
+    }
+    
     //placa inválida
     if ((placa_digitada[0]<'A'|| placa_digitada[0]>'Z')|| (placa_digitada[1]<'A'|| placa_digitada[1]>'Z')|| (placa_digitada[2]<'A'|| placa_digitada[2]>'Z')
         || (placa_digitada[3]<'0'|| placa_digitada[3]>'9')|| (placa_digitada[5]<'0'|| placa_digitada[5]>'9')|| (placa_digitada[6]<'0'|| placa_digitada[6]>'9') 
@@ -245,8 +279,59 @@ void verifica_senha_cartao (){
     }
 }
 
+void verifica_senha_adm (){
+    if (strcmp(senha_adm_digitada, "12345") ==0){
+        limpa_lcd();
+        lcd_cmd (PRIMEIRA_LINHA);
+        envia_string ("1)REL 2)IRREG");
+        estado_sistema = ADM_MENU;
+    }else{
+        limpa_lcd();
+        lcd_cmd (PRIMEIRA_LINHA);
+        envia_string("SENHA INVALIDA");
+        estado_sistema = PLACA_INVALIDA;
+        TCNT1 = 0; 
+        TCCR1B |= (1 << CS12);
+    }
+}
+
+void verifica_hora_adm (){ 
+    const int dias_meses[] = {0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+    int dias_maximos = 31; 
+    
+    int d_novo = (ajuste_tempo[0]-'0')*10 + (ajuste_tempo[1]-'0');
+    int m_novo = (ajuste_tempo[2]-'0')*10 + (ajuste_tempo[3]-'0');
+    int a_novo = (ajuste_tempo[4]-'0')*1000 + (ajuste_tempo[5]-'0')*100 + (ajuste_tempo[6]-'0')*10 + (ajuste_tempo[7]-'0');
+    int h_novo = (ajuste_tempo[8]-'0')*10 + (ajuste_tempo[9]-'0');
+    int min_novo = (ajuste_tempo[10]-'0')*10 + (ajuste_tempo[11]-'0');
 
 
+    if (m_novo >= 1 && m_novo <= 12) {
+        //Ano bissexto
+        if ((m_novo == 2) && ((a_novo % 4 == 0 && a_novo % 100 != 0) || (a_novo % 400 == 0))) {
+            dias_maximos = 29;
+        } else {
+            dias_maximos = dias_meses[m_novo];
+        }
+    }
+    if (m_novo>=1 && m_novo<=12 && d_novo>=1 && d_novo<=dias_maximos && h_novo>=0 && h_novo<=23 && min_novo>=0 && min_novo<=59){
+        dia = d_novo; mes = m_novo; ano= a_novo; hora = h_novo; min = min_novo; 
+        ano1 = a_novo / 100; ano2 = a_novo % 100;
+        
+        limpa_lcd();
+        lcd_cmd(PRIMEIRA_LINHA);
+        envia_string("ATUALIZADO");
+        estado_sistema = PLACA_INVALIDA; 
+        TCNT1 = 0; TCCR1B |= (1 << CS12);
+    }else{
+        limpa_lcd();
+        lcd_cmd(PRIMEIRA_LINHA);
+        envia_string("DATA INVALIDA");
+        estado_sistema = PLACA_INVALIDA; 
+        TCNT1 = 0; TCCR1B |= (1 << CS12);
+    }
+
+}
 
 void apaga_caractere_lcd(){
     
@@ -270,6 +355,20 @@ void apaga_caractere_lcd(){
         lcd_data (' ');
         lcd_cmd (SEGUNDA_LINHA + indice_cartao_senha);
         senha_cartao_digitado[indice_cartao_senha] = '\0';
+    }
+    else if (estado_sistema == ADM_SENHA){
+        indice_senha_adm--;
+        lcd_cmd (SEGUNDA_LINHA + indice_senha_adm);
+        lcd_data (' ');
+        lcd_cmd (SEGUNDA_LINHA + indice_senha_adm);
+        senha_adm_digitada[indice_senha_adm] = '\0';
+    }
+    else if (estado_sistema == ADM_AJUSTE_TEMPO){
+        indice_ajuste_tempo--;
+        lcd_cmd (SEGUNDA_LINHA + indice_ajuste_tempo);
+        lcd_data (' ');
+        lcd_cmd (SEGUNDA_LINHA + indice_ajuste_tempo);
+        ajuste_tempo[indice_ajuste_tempo] = '\0';
     }
     
 }
@@ -353,7 +452,7 @@ void imprime_comprovante(signed char tempo_escolhido, int preco_a_pagar){
 
 ISR (TIMER1_COMPA_vect){
     if (estado_sistema == DIGITANDO_PLACA || estado_sistema == SELECAO_TEMPO || estado_sistema == MENU_PAGAMENTO|| //depois penso em um jeito mais inteligente de fazer isso kkkkkkkkkkkkkkkkkk bagulho feio
-        estado_sistema == CARTAO || estado_sistema == CARTAO_SENHA || estado_sistema == QUER_COMPROVANTE){ 
+        estado_sistema == CARTAO || estado_sistema == CARTAO_SENHA || estado_sistema == QUER_COMPROVANTE || estado_sistema == ADM_MENU){ 
         
         confirmar_tecla = 1;
         TCCR1B &= ~((1 << CS12) | (1 << CS11) | (1 << CS10)); //desliga o timer
@@ -516,6 +615,92 @@ int main(void) {
             indice_placa = 0;
             reset_memoria_teclado();
             estado_sistema = DIGITANDO_PLACA; //Volta para o estado inicial de dgitar a placa
+        }
+
+        else if (estado_sistema == ADM_SENHA){
+            roda_teclado_numerico();
+            if (nova_tecla == TECLADO_PRESSIONADO){
+                contador_inatividade = 0;
+                if (saida_teclado == '*'){
+                    if (indice_senha_adm > 0){
+                        apaga_caractere_lcd();
+                    }else {
+                        limpa_lcd();
+                        lcd_cmd(PRIMEIRA_LINHA);
+                        envia_string("DIGITE PLACA");
+                        lcd_cmd(SEGUNDA_LINHA);
+                        indice_placa = 0;
+                        estado_sistema = DIGITANDO_PLACA;
+                    }
+                }
+
+                else if (saida_teclado == '#'){
+                    if (indice_senha_adm == 5){
+                        senha_adm_digitada [5] = '\0';
+                        verifica_senha_adm();
+                    }
+                }
+                else {
+                    //UART_transmit(saida_teclado);
+                    registra_caractere_confirmado(saida_teclado);
+                }
+                nova_tecla = TECLADO_LIVRE;
+
+            }
+        }
+        else if (estado_sistema == ADM_MENU){
+            roda_teclado();
+            if (nova_tecla == TECLADO_PRESSIONADO){
+                contador_inatividade = 0;
+                if (saida_teclado == '1'){
+                    limpa_lcd();
+                    lcd_cmd (PRIMEIRA_LINHA);
+                    envia_string("DDMMAAAAhhmm:");
+                    lcd_cmd (SEGUNDA_LINHA);
+                    estado_sistema = ADM_AJUSTE_TEMPO;
+                    indice_ajuste_tempo = 0;
+                }
+                else if (saida_teclado == '2'){
+                    //Lógica para verificar irregularidades
+                }
+                else if (saida_teclado == '*'){ //Sai do modo admin
+                    limpa_lcd ();
+                    lcd_cmd(PRIMEIRA_LINHA); //posiciona cursor na primeira linha
+                    envia_string("DIGITE PLACA");
+                    lcd_cmd(SEGUNDA_LINHA); //cursor na segunda linha
+                    indice_placa = 0;
+                    reset_memoria_teclado();
+                    estado_sistema = DIGITANDO_PLACA; 
+                } 
+                nova_tecla = TECLADO_LIVRE;
+            }       
+        }
+        else if (estado_sistema == ADM_AJUSTE_TEMPO){
+            roda_teclado_numerico();
+            if (nova_tecla == TECLADO_PRESSIONADO){
+                contador_inatividade = 0;
+                if (saida_teclado == '*'){
+                    if (indice_ajuste_tempo > 0){
+                        apaga_caractere_lcd();
+                    }else {
+                        limpa_lcd();
+                        lcd_cmd(PRIMEIRA_LINHA);
+                        envia_string("1)REL 2)IRREG");
+                        estado_sistema = ADM_MENU;
+                    }
+                }
+                else if (saida_teclado =='#'){
+                    if (indice_ajuste_tempo == 12){
+                        ajuste_tempo[12] = '\0';
+                        verifica_hora_adm();
+                    }
+                    
+                }
+                else{
+                    registra_caractere_confirmado(saida_teclado);
+                }
+                nova_tecla = TECLADO_LIVRE;
+            }
         }
 
         else if (estado_sistema == SELECAO_TEMPO) {

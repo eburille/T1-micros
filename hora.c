@@ -1,31 +1,43 @@
 #include "hora.h"
+#include "uart_lib.h"
 
-char dia = 0;
-char mes = 0;
-int ano = 0;
-char hora = 0;
-char min = 0;
+volatile char dia = 21;
+volatile char mes = 10;
+volatile int ano = 2026;
+volatile char hora = 10;
+volatile char min = 30;
+
+volatile unsigned char ano1 = 20;
+volatile unsigned char ano2 = 26;
+
+char eh_horario_comercial(){
+    if (hora >= HORA_INICIO_TRABALHO && hora < HORA_FIM_TRABALHO){
+        return 1;
+    }
+    return 0;
+}
 
 /// @brief Ajusta a hora baseado em uma string no formato DMAAHm
 /// @param string String com as informações de data
-void ajustar_hora(char string[6]){
+void ajustar_hora(unsigned char string[6]){
     dia = string[0];
     mes = string[1];
-    ano = string[2] << 8 | string[3];
+    ano = (((int)string[2]) << 8) | ((int)string[3]);
     hora = string[4];
     min = string[5];
+
+    ano1 = string[2];
+    ano2 = string[3];
 }
 
 /// @brief Calcula a diferença de tempo em minutos entre a hora atual e a hora passada por parametro
-/// @param hora_entrada string com o hora de entrada no formato  DMAAHm
+/// @param dia_inicial 
+/// @param mes_inicial 
+/// @param ano_inicial 
+/// @param hora_inicial 
+/// @param min_inicial 
 /// @return Se ja tiver se passado mais de 1 dia, retorna 500, caso contrario, retorna o tempo passado em minutos
-int calc_delta_time_min(char hora_entrada[6]){    
-    char dia_inicial = hora_entrada[0];
-    char mes_inicial = hora_entrada[1];
-    int ano_inicial = hora_entrada[2] << 8 | hora_entrada[3];
-    char hora_inicial = hora_entrada[4];
-    char min_inicial = hora_entrada[5];
-
+int calc_delta_time_min(char dia_inicial, char mes_inicial, int ano_inicial, char hora_inicial, char min_inicial){    
     if (ano - ano_inicial){
         return 500;  // Como o maximo de tempo é 120min, o cálculo preciso não importa
     }
@@ -89,8 +101,26 @@ void prox_minuto(){
 void hora_atual_str(char hora_atual_ptr[6]){
     hora_atual_ptr[0] = dia;
     hora_atual_ptr[1] = mes;
-    hora_atual_ptr[2] = ano >> 8;
-    hora_atual_ptr[3] = ano & 0xF;
+    hora_atual_ptr[2] = (char) (ano >> 8);
+    hora_atual_ptr[3] = (char) (ano & 0xF);
     hora_atual_ptr[4] = hora;
     hora_atual_ptr[5] = min;
+}
+
+void printa_data(){
+    UART_transmit('\n');
+    UART_envia_string("Data atual - ");
+    UART_transmit(dia + 48);
+    UART_transmit('/');
+    UART_transmit(mes + 48);
+    UART_transmit('/');
+    UART_transmit(((char)(ano >> 8)) + 48);
+    UART_transmit('_');
+    UART_transmit(((char)(ano & 0xF)) + 48);
+    UART_transmit('/');
+    UART_transmit(hora + 48);
+    UART_transmit(':');
+    UART_transmit(min + 48);
+    UART_transmit('\n');
+    UART_envia_string("----------------------------------");
 }

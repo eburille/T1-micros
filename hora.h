@@ -4,16 +4,20 @@
 #define HORA_INICIO_TRABALHO  8
 #define HORA_FIM_TRABALHO    18
 
-extern char dia;
-extern char mes;
-extern int ano;
-extern char hora;
-extern char min;
+extern volatile char dia;
+extern volatile char mes;
+extern volatile int ano;
+extern volatile char hora;
+extern volatile char min;
 
-void ajusta_hora(char string[6]);
-int calc_delta_time_min(char hora_entrada[6]);
+extern volatile unsigned char ano1;
+extern volatile unsigned char ano2;
+
+void ajustar_hora(unsigned char string[6]);
+int calc_delta_time_min(char dia_inicial, char mes_inicial, int ano_inicial, char hora_inicial, char min_inicial);
 void prox_minuto();
 void hora_atual_str(char hora_atual_ptr[6]);
-
+char eh_horario_comercial();
+void printa_data();
 
 #endif

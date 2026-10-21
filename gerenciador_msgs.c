@@ -120,6 +120,11 @@ void proc_tipo_mensagem(){
             // UART_envia_string("Dados Via\n");
             break;
 
+        case DEBUG:
+            num_caracteres_a_receber = 0;
+            estado_gerenciador = (int)MENSAGEM_RECEBIDA;
+            break;
+
         default:
             // UART_envia_string("Caracter errado\n");
             break;

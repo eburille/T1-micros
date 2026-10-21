@@ -48,7 +48,7 @@ char sistema_inativo = 1;
 char rua_escolhida = -1;
 
 
-int flag_vaga_especial = 0;
+int flag_vaga_especial = N_ESPECIAL;
 int resetar_tela = 0;
 int tempo_erro = 0;
 
@@ -327,12 +327,15 @@ ISR (TIMER1_COMPA_vect){
 ISR(TIMER3_COMPA_vect) {
     static char contador_segundos = 0;
 
-    toggle_led();
     contador_segundos++;
     contador_inatividade++; //conta o tempo que o display ta inativo
     flag_atualiza_relogio = 1; //avisa que passou um segundo
+    
+    if ((num_carros_irregulares > 0) && eh_horario_comercial()){
+        toggle_led();
+    }
 
-    if (contador_segundos >= 60) {
+    if (contador_segundos >= 120) {
         contador_segundos = 0;
         prox_minuto();
     }
@@ -376,8 +379,8 @@ int main(void) {
 
       ///// TIMER 3 /////
 
-    // 1 SEGUNDO
-    OCR3A = 15625; 
+    // 0.5 SEGUNDO
+    OCR3A = 7812; 
 
     // Habilita o modo CTC + Prescaler para 1024
     TCCR3B |= (1 << WGM32) | (1 << CS32) | (1 << CS30); 
@@ -401,7 +404,7 @@ int main(void) {
 
     while(1) {
         
-        if (contador_inatividade >=30 && sistema_inativo == 0){ //30 segundos sem ninguem tocar no teclado
+        if (contador_inatividade >=60 && sistema_inativo == 0){ //30 segundos sem ninguem tocar no teclado
             limpa_lcd();
             estado_sistema = DIGITANDO_PLACA; //Volta para o estado inicial de digitar a placa
             indice_placa = 0;
@@ -415,8 +418,8 @@ int main(void) {
             
             if (sistema_inativo == 1 && flag_atualiza_relogio == 1){ //Se estiver inativa, exibe o relogio
                 flag_atualiza_relogio = 0;
-                char msg_hora[17];
-                sprintf(msg_hora, " %02d/%02d  %02d:%02d ", dia, mes, hora, min);
+                char msg_hora[22];
+                sprintf(msg_hora, "%02d/%02d/%04d %02d:%02d", dia, mes, ano, hora, min);
                 lcd_cmd(0x80);
                 envia_string(msg_hora);
                 lcd_cmd(0xC0);
@@ -701,7 +704,7 @@ int main(void) {
         if (novas_mensagens_servidor() > 0){
             msg = le_mensagem();
 
-            if(estado_sistema == AGUARDA_E && msg.tipo == 'E'){ //Se o tipo da mensagem for 'E', quer dizer que recebeu os dados do estacionamento
+            if(estado_sistema == AGUARDA_E && msg.tipo == DADOS_ESTACIONAMENTO){ //Se o tipo da mensagem for 'E', quer dizer que recebeu os dados do estacionamento
                 adiciona_carro(placa_digitada, flag_vaga_especial, tempo_escolhido, rua_escolhida);
                 limpa_lcd();
                 lcd_cmd (PRIMEIRA_LINHA);
@@ -710,14 +713,9 @@ int main(void) {
                 envia_string ("*-NAO   #-SIM");
                 estado_sistema = QUER_COMPROVANTE; 
             }
-            else if (estado_sistema == AGUARDA_P && msg.tipo == 'P'){//Se o tipo da mensagem for P, servidor externo está enviando a resposta do pagamento
+            else if (estado_sistema == AGUARDA_P && msg.tipo == PAGAMENTO){//Se o tipo da mensagem for P, servidor externo está enviando a resposta do pagamento
                 
                 if (msg.string[0] == 'S'){//Se a string for 'S', pagamento foi realizado com sucesso
-                    limpa_lcd();
-                    lcd_cmd (PRIMEIRA_LINHA);
-                    envia_string ("COMPROVANTE?");
-                    lcd_cmd (SEGUNDA_LINHA);
-                    envia_string ("*-NAO   #-SIM");
                     estado_sistema = REQ_DADOS_ESTAC;
                 }
                 else if (msg.string[0] == 'F'){//Se a string for 'F', numero ou senha incorretos
@@ -737,14 +735,26 @@ int main(void) {
                     TCCR1B |= (1 << CS12);
                 }
             }
-            else if (msg.tipo == 'H'){ // 
+            else if (msg.tipo == HORARIO){ // 
                 ajustar_hora(msg.string); 
                 UART_envia_string ("PH"); //mensagem de resposta para o servidor externo
             }
+
+            else if (msg.tipo == 'D'){ // printa lista de carros
+                printa_data();
+                printa_lista_carros();
+            }
+
             UART_envia_string("\nMENSAGEM RECEBIDA");
         }
 
 
+        gerenciar_parkimetro();
+
+        if (!eh_horario_comercial()){
+            desl_led();
+        }
+       
     }
     return 0;
 }

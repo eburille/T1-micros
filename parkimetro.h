@@ -48,6 +48,7 @@ typedef struct{
 
 extern Carro carros[NUM_MAX_CARROS];
 extern volatile char num_carros_irregulares;
+extern volatile char num_carros_parasitas;
 
 // extern Carro carros_irregulares[/* NUMERO MAXIMO DE CARROS */];
 
@@ -60,5 +61,7 @@ void verifica_carros_presentes(char placas[][8], char num_placas);
 void gerenciar_parkimetro();
 
 void printa_lista_carros();
+
+void verifica_carros_parasitas(char placas[][8], char num_placas);
 
 #endif

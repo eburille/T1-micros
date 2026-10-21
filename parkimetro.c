@@ -17,6 +17,7 @@ volatile char num_carros = 0;
 int tempo_array[] = {30, 60, 90, 120, 500};
 Carro carros[NUM_MAX_CARROS];
 volatile char num_carros_irregulares = 0;
+volatile char num_carros_parasitas = 0;
 
 void adiciona_carro(char placa[7], char especial, char tempo_contratado, char rua){
     char hora_atual[6];
@@ -88,11 +89,11 @@ char compara_placas(char placa1[7], char placa2[7]){
 /// @param placas Lista dos carros presentes
 void verifica_carros_presentes(char placas[][8], char num_placas){
     int i = 0;
-    int j = 0;
+    int j = 1;
 
     char carro_presente = CARRO_AUSENTE;
     for (i; i < num_carros; i++){
-        for (j; j < num_placas; j++){
+        for (j; j <= num_placas; j++){
             if (compara_placas(carros[i].placa, placas[j])){
                 carro_presente = CARRO_PRESENTE;
                 break;
@@ -103,6 +104,23 @@ void verifica_carros_presentes(char placas[][8], char num_placas){
             remove_carro(i);
         }
         carro_presente = CARRO_AUSENTE;
+    }
+}
+
+/// @brief Recebe uma lista de placas dos carros presentes e remove os carros que não estão nessa lista
+/// @param placas Lista dos carros presentes
+void verifica_carros_parasitas(char placas[][8], char num_placas){
+    int i = 1;
+    int j = 0;
+
+    num_carros_parasitas = 0;
+    for (i; i <= num_placas; j++){
+        for (j; j < num_carros; i++){
+            if (compara_placas(placas[i], carros[j].placa)){
+                num_carros_parasitas++;
+                break;
+            }
+        }
     }
 }
 

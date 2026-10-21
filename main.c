@@ -376,7 +376,7 @@ ISR(TIMER3_COMPA_vect) {
     contador_inatividade++; //conta o tempo que o display ta inativo
     flag_atualiza_relogio = 1; //avisa que passou um segundo
     
-    if ((num_carros_irregulares > 0) && eh_horario_comercial()){
+    if ((num_carros_irregulares > 0 || num_carros_parasitas > 0) && eh_horario_comercial()){
         toggle_led();
     }
 
@@ -785,18 +785,25 @@ int main(void) {
                 UART_envia_string ("PH"); //mensagem de resposta para o servidor externo
             }
 
-            else if (msg.tipo == 'D'){ // printa lista de carros
+            else if(msg.tipo == CONDICAO_VIA){
+
+                verifica_carros_presentes(msg.string, (msg.tamanho - 7)/7);
+                verifica_carros_parasitas(msg.string, (msg.tamanho - 7)/7);
+            }
+
+            else if (msg.tipo == 'D'){ // DEBUG
                 printa_data();
                 printa_lista_carros();
             }
 
-            UART_envia_string("\nMENSAGEM RECEBIDA");
+            UART_envia_string("\nMENSAGEM RECEBIDA\n");
+            // UART_envia_string(msg.string);
         }
 
 
         gerenciar_parkimetro();
 
-        if (!eh_horario_comercial()){
+        if (!eh_horario_comercial() || (num_carros_irregulares == 0 && num_carros_parasitas == 0)){
             desl_led();
         }
        

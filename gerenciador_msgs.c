@@ -29,6 +29,7 @@ void proc_n_bytes_via(){
 
     c = le_char();
     num_caracteres_a_receber = c;
+    mensagem_recebida.tamanho = c;
     estado_gerenciador = RECEBENDO_MENSAGEM;
 }
 

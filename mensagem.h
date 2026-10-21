@@ -1,7 +1,7 @@
 #ifndef MENSAGEM__H
 #define MENSAGEM__H
 
-#define TAMANHO_MAX_MSG              256
+#define TAMANHO_MAX_MSG               78
         
 #define DADOS_ESTACIONAMENTO          'E'
 #define PAGAMENTO                     'P'
@@ -20,6 +20,7 @@
 typedef struct{
     unsigned char string[TAMANHO_MAX_MSG];
     char tipo;
+    unsigned char tamanho;
 } Mensagem;
 
 #endif

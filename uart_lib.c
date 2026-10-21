@@ -16,8 +16,11 @@ void UART_init(){
     // Habilita transmissão, receptor e Interupção
     UCSR0B = (1 << RXEN0) | (1 << TXEN0) | (1 << RXCIE0);
 
-    // 8 bits, 1 stop bit, sem paridade
+    // 8 bits, 1 stop bit, paridade impar
     UCSR0C = (1 << UPM01) | (1 << UPM00) | (1 << UCSZ01) | (1 << UCSZ00);
+
+    // 8 bits, 1 stop bit, sem paridade
+    //UCSR0C = (1 << UCSZ01) | (1 << UCSZ00);
 }
 
 void UART_transmit(char data)
@@ -51,12 +54,10 @@ char novo_caracter_recebido_UART(){
 }
 
 
-void UART_envia_string(char string[16]){
-    int i;
-	for (i = 0; i < 32; i++){
-		if (string[i] == '\0'){
-			return;
-		}
-		UART_transmit(string[i]);
-	}
+void UART_envia_string(char *string){
+    int i = 0;
+    while (string[i] != '\0'){
+        UART_transmit(string[i]);
+        i++;
+    }
 }

@@ -306,6 +306,51 @@ void envia_dados_pagamento(int preco){
     estado_sistema = AGUARDA_P; //Estado onde está aguardando o 'S''P' do servidor externo
 }
 
+void imprime_comprovante(signed char tempo_escolhido, int preco_a_pagar){
+    char payload_comprovante[85];
+    int tamanho = 0;
+    if (tempo_escolhido == t_ilimitado){
+        tamanho = sprintf(payload_comprovante, "PARKMICROS\r\nPagamento: R$%d,%02d\r\nPlaca: %s\r\nValido ate: ILIMITADO\r\n", 
+            preco_a_pagar / 100, preco_a_pagar % 100, 
+            placa_digitada);
+    }
+
+    else {
+         int tempo_minutos = 0;
+        if (tempo_escolhido == t_30_min) tempo_minutos = 30;
+        else if (tempo_escolhido == t_1_hora) tempo_minutos = 60;
+        else if (tempo_escolhido == t_1h_30m) tempo_minutos = 90;
+        else if (tempo_escolhido == t_2_hora) tempo_minutos = 120;
+        
+        int min_totais = min + tempo_minutos;
+        int min_vencimento = min_totais % 60;
+        int hora_vencimento = (hora + (min_totais/60)) %24;
+
+
+        tamanho = sprintf(payload_comprovante, 
+        "PARKMICROS\r\nPagamento: R$%d,%02d\r\nPlaca: %s\r\nValido ate: %02d:%02d\r\n", 
+        preco_a_pagar / 100, preco_a_pagar % 100, 
+        placa_digitada, 
+        hora_vencimento, min_vencimento);
+    }
+   
+    UART_transmit('P');
+    UART_transmit('I');
+    UART_transmit((char)(tamanho >> 8));   //byte mais significativo
+    UART_transmit((char)(tamanho & 0xFF)); //menos significativo 
+    UART_envia_string("\r\n");
+    UART_envia_string(payload_comprovante);
+    
+    limpa_lcd();
+    indice_placa = 0;
+    reset_memoria_teclado();
+    lcd_cmd(PRIMEIRA_LINHA); 
+    envia_string("DIGITE PLACA");
+    lcd_cmd(SEGUNDA_LINHA); 
+    estado_sistema = DIGITANDO_PLACA;
+    
+}
+
 ISR (TIMER1_COMPA_vect){
     if (estado_sistema == DIGITANDO_PLACA || estado_sistema == SELECAO_TEMPO || estado_sistema == MENU_PAGAMENTO|| //depois penso em um jeito mais inteligente de fazer isso kkkkkkkkkkkkkkkkkk bagulho feio
         estado_sistema == CARTAO || estado_sistema == CARTAO_SENHA || estado_sistema == QUER_COMPROVANTE){ 
@@ -686,7 +731,7 @@ int main(void) {
                     estado_sistema = DIGITANDO_PLACA;
                 }
                 else if (saida_teclado == '#'){
-                    //Dai fazer lógica para impressao do comprovante
+                    imprime_comprovante(tempo_escolhido,preco_a_pagar);
                 }
                 
 

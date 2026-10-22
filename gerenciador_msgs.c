@@ -91,37 +91,42 @@ void proc_tipo_mensagem(){
     c = le_char();
     mensagem_recebida.tipo = c;
     switch (c) {
-        case DADOS_ESTACIONAMENTO:
-            num_caracteres_a_receber = (int) DADOS_ESTACIONAMENTO_N_BYTES;
+        case MSG_DADOS_ESTACIONAMENTO:
+            num_caracteres_a_receber = (int) MSG_DADOS_ESTACIONAMENTO_N_BYTES;
             estado_gerenciador = (int)MENSAGEM_RECEBIDA;
             // UART_envia_string("Dados estacionamento\n");
             break;
             
-        case PAGAMENTO:
-            num_caracteres_a_receber = (int)PAGAMENTO_N_BYTES;
+        case MSG_PAGAMENTO:
+            num_caracteres_a_receber = (int)MSG_PAGAMENTO_N_BYTES;
             estado_gerenciador = (int)RECEBENDO_MENSAGEM;
             // UART_envia_string("Dados Pagamento\n");
             break;
             
-        case IMPRESSAO_COMP:
-            num_caracteres_a_receber = (int)IMPRESSAO_COMPN_N_BYTES;
+        case MSG_IMPRESSAO_COMP:
+            num_caracteres_a_receber = (int)MSG_IMPRESSAO_COMPN_N_BYTES;
             estado_gerenciador = (int)MENSAGEM_RECEBIDA;
             // UART_envia_string("Dados impressao\n");
             break;
 
-        case HORARIO:
-            num_caracteres_a_receber = (int)HORARION_N_BYTES;
+        case MSG_HORARIO:
+            num_caracteres_a_receber = (int)MSG_HORARION_N_BYTES;
             estado_gerenciador = (int)RECEBENDO_MENSAGEM;
             //UART_envia_string("Dados hora\n");
             break;
 
-        case CONDICAO_VIA:
-            num_caracteres_a_receber = (int)CONDICAO_VIA_N_BYTES;
+        case MSG_CONDICAO_VIA:
+            num_caracteres_a_receber = (int)MSG_CONDICAO_VIA_N_BYTES;
             estado_gerenciador = (int)RECEBENDO_N_BYTES_MENSAGEM_VIA;
             // UART_envia_string("Dados Via\n");
             break;
+        
+        case MSG_CARTAO_INSERIDO:
+            num_caracteres_a_receber = (int)MSG_CARTAO_INSERIDO_N_BYTES;
+            estado_gerenciador = (int)RECEBENDO_MENSAGEM;
+            break;
 
-        case DEBUG:
+        case MSG_DEBUG:
             num_caracteres_a_receber = 0;
             estado_gerenciador = (int)MENSAGEM_RECEBIDA;
             break;

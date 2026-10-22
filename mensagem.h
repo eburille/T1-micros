@@ -3,18 +3,20 @@
 
 #define TAMANHO_MAX_MSG               78
         
-#define DADOS_ESTACIONAMENTO          'E'
-#define PAGAMENTO                     'P'
-#define IMPRESSAO_COMP                'I'
-#define HORARIO                       'H'
-#define CONDICAO_VIA                  'V'
-#define DEBUG                         'D'
+#define MSG_DADOS_ESTACIONAMENTO          'E'
+#define MSG_PAGAMENTO                     'P'
+#define MSG_IMPRESSAO_COMP                'I'
+#define MSG_HORARIO                       'H'
+#define MSG_CONDICAO_VIA                  'V'
+#define MSG_CARTAO_INSERIDO               'C'
+#define MSG_DEBUG                         'D'
 
-#define DADOS_ESTACIONAMENTO_N_BYTES    0
-#define PAGAMENTO_N_BYTES               1
-#define IMPRESSAO_COMPN_N_BYTES         0
-#define HORARION_N_BYTES                6
-#define CONDICAO_VIA_N_BYTES            1
+#define MSG_DADOS_ESTACIONAMENTO_N_BYTES    0
+#define MSG_PAGAMENTO_N_BYTES               1
+#define MSG_IMPRESSAO_COMPN_N_BYTES         0
+#define MSG_HORARION_N_BYTES                6
+#define MSG_CONDICAO_VIA_N_BYTES            1
+#define MSG_CARTAO_INSERIDO_N_BYTES         6
 
 
 typedef struct{

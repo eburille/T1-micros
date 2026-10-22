@@ -987,7 +987,7 @@ int main(void) {
         if (novas_mensagens_servidor() > 0){
             msg = le_mensagem();
 
-            if(estado_sistema == AGUARDA_E && msg.tipo == DADOS_ESTACIONAMENTO){ //Se o tipo da mensagem for 'E', quer dizer que recebeu os dados do estacionamento
+            if(estado_sistema == AGUARDA_E && msg.tipo == MSG_DADOS_ESTACIONAMENTO){ //Se o tipo da mensagem for 'E', quer dizer que recebeu os dados do estacionamento
                 adiciona_carro(placa_digitada, flag_vaga_especial, tempo_escolhido, rua_escolhida);
                 limpa_lcd();
                 lcd_cmd (PRIMEIRA_LINHA);
@@ -996,7 +996,7 @@ int main(void) {
                 envia_string ("*-NAO   #-SIM");
                 estado_sistema = QUER_COMPROVANTE; 
             }
-            else if (estado_sistema == AGUARDA_P && msg.tipo == PAGAMENTO){//Se o tipo da mensagem for P, servidor externo está enviando a resposta do pagamento
+            else if (estado_sistema == AGUARDA_P && msg.tipo == MSG_PAGAMENTO){//Se o tipo da mensagem for P, servidor externo está enviando a resposta do pagamento
                 
                 if (msg.string[0] == 'S'){//Se a string for 'S', pagamento foi realizado com sucesso
                     estado_sistema = REQ_DADOS_ESTAC;
@@ -1018,18 +1018,40 @@ int main(void) {
                     TCCR1B |= (1 << CS12);
                 }
             }
-            else if (msg.tipo == HORARIO){ // 
+            else if (msg.tipo == MSG_HORARIO){ // 
                 ajustar_hora(msg.string); 
                 UART_envia_string ("PH"); //mensagem de resposta para o servidor externo
             }
 
-            else if(msg.tipo == CONDICAO_VIA){
-
+            else if(msg.tipo == MSG_CONDICAO_VIA){
+                UART_envia_string("PV");
                 verifica_carros_presentes(msg.string, (msg.tamanho - 7)/7);
                 verifica_carros_parasitas(msg.string, (msg.tamanho - 7)/7);
             }
 
-            else if (msg.tipo == 'D'){ // DEBUG
+            else if(msg.tipo == MSG_CARTAO_INSERIDO){
+                UART_envia_string("PC");
+
+                if (estado_sistema == CARTAO){
+                    cartao_digitado[0] = msg.string[0];
+                    cartao_digitado[1] = msg.string[1];
+                    cartao_digitado[2] = msg.string[2];
+                    cartao_digitado[3] = msg.string[3];
+                    cartao_digitado[4] = msg.string[4];
+                    cartao_digitado[5] = msg.string[5];
+                    verifica_cartao();
+                }
+                // UART_envia_string("\nCARTAO INSERIDO COM SUCESSO - ");
+                // UART_transmit(msg.string[0] );
+                // UART_transmit(msg.string[1] );
+                // UART_transmit(msg.string[2] );
+                // UART_transmit(msg.string[3] );
+                // UART_transmit(msg.string[4] );
+                // UART_transmit(msg.string[5] );
+                // UART_transmit('\n');
+            }
+
+            else if (msg.tipo == MSG_DEBUG){ // DEBUG
                 printa_data();
                 printa_lista_carros();
             }

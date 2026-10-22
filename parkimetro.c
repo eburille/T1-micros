@@ -1,8 +1,10 @@
 #include "parkimetro.h"
 #include "hora.h"
 #include "string.h"
+#include <stdio.h>
 
 #include "uart_lib.h"
+#include "lcd_lib.h"
 
 #define CARRO_PRESENTE  0
 #define CARRO_AUSENTE   1
@@ -10,6 +12,9 @@
 #define TEM_PARASITA    1
 #define N_TEM_PARASITA  0
 
+
+#define PRIMEIRA_LINHA 0x80
+#define SEGUNDA_LINHA 0xC0
 // Rua osvaldo = {"OSVALDO", 0, 0};
 // Rua sarmento = {"SARMENT", 0, 0};
 // Rua joao = {"JPESSOA", 0, 0};
@@ -21,6 +26,8 @@ int tempo_array[] = {30, 60, 90, 120, 500};
 Carro carros[NUM_MAX_CARROS];
 volatile char num_carros_irregulares = 0;
 volatile char num_carros_parasitas = 0;
+int indice_irreg = 0;
+
 
 void adiciona_carro(char placa[7], char especial, char tempo_contratado, char rua){
     char hora_atual[6];
@@ -64,8 +71,9 @@ void verifica_carros_regulares(){
         if (verifica_carro_irregular(carros[i]) == IRREGULAR && (carros[i].especial == N_ESPECIAL)){
             carros[i].esta_regular = IRREGULAR;
             num_carros_irregulares++;
-        }
-        carros[i].esta_regular = REGULAR;
+        }else{
+            carros[i].esta_regular = REGULAR;
+        } 
     }
 }
 
@@ -131,7 +139,7 @@ void verifica_carros_presentes(char placas[][7], char num_placas){
     for (i; i < num_carros; i++){
         j=1;
         if (carros[i].rua != rua){
-            break;
+            continue;
         }
         for (j; j <= num_placas; j++){
             // UART_envia_string("roda compara placas\n");
@@ -217,4 +225,46 @@ void printa_lista_carros(){
         UART_transmit(carro.esta_regular + 48);
         UART_transmit('\n');
     }
+    
+  
+}
+
+//Mostra no display carros irregulares para o adm
+void mostrar_irreg(int indice_inicio){
+    int i;
+    char encontrou = 0;
+    char msg_placa [17];
+
+    for (i=indice_inicio; i<num_carros; i++){
+        if (carros[i].esta_regular == IRREGULAR){
+            encontrou = 1;
+            indice_irreg = i;
+            limpa_lcd ();
+            lcd_cmd (PRIMEIRA_LINHA);
+            sprintf (msg_placa, "PLACA: %s", carros[i].placa);
+            envia_string (msg_placa);
+            
+            lcd_cmd (SEGUNDA_LINHA);
+            if (carros[i].rua == OSVALDO){
+                envia_string ("RUA: OSVALDO");
+            }
+            else if (carros[i].rua ==JPESSOA){
+                envia_string ("RUA: JPESSOA");
+            }
+            else if (carros[i].rua == SARMENT){
+                envia_string ("RUA:SARMENTO");
+            }
+            break;
+        }
+    }
+
+    if (encontrou == 0){
+        limpa_lcd();
+        lcd_cmd (PRIMEIRA_LINHA);
+        envia_string ("SEM IRREGULARES");
+        lcd_cmd (SEGUNDA_LINHA);
+        envia_string ("* PARA SAIR");
+        indice_irreg = -1;
+    }
+
 }

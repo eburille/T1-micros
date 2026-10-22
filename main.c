@@ -37,6 +37,7 @@
 #define ADM_AJUSTE_TEMPO   20
 #define ADM_MENU           21
 #define SELECAO_RUA        22
+#define ADM_IRREG          23
 
 int estado_sistema = 0; 
 int indice_placa = 0; 
@@ -327,6 +328,8 @@ void verifica_hora_adm (){
 
 }
 
+
+
 void apaga_caractere_lcd(){
     
     if(estado_sistema == DIGITANDO_PLACA){
@@ -446,7 +449,7 @@ void imprime_comprovante(signed char tempo_escolhido, int preco_a_pagar){
 
 ISR (TIMER1_COMPA_vect){
     if (estado_sistema == DIGITANDO_PLACA || estado_sistema == SELECAO_TEMPO || estado_sistema == MENU_PAGAMENTO|| //depois penso em um jeito mais inteligente de fazer isso kkkkkkkkkkkkkkkkkk bagulho feio
-        estado_sistema == CARTAO || estado_sistema == CARTAO_SENHA || estado_sistema == QUER_COMPROVANTE || estado_sistema == ADM_MENU){ 
+        estado_sistema == CARTAO || estado_sistema == CARTAO_SENHA || estado_sistema == QUER_COMPROVANTE || estado_sistema == ADM_MENU ||estado_sistema == ADM_IRREG){ 
         
         confirmar_tecla = 1;
         TCCR1B &= ~((1 << CS12) | (1 << CS11) | (1 << CS10)); //desliga o timer
@@ -654,8 +657,10 @@ int main(void) {
                     estado_sistema = ADM_AJUSTE_TEMPO;
                     indice_ajuste_tempo = 0;
                 }
-                else if (saida_teclado == '2'){
-                    //Lógica para verificar irregularidades
+                else if (saida_teclado == 'A'){
+                    indice_irreg = 0;
+                    estado_sistema = ADM_IRREG;
+                    mostrar_irreg (indice_irreg);
                 }
                 else if (saida_teclado == '*'){ //Sai do modo admin
                     limpa_lcd ();
@@ -697,7 +702,26 @@ int main(void) {
                 nova_tecla = TECLADO_LIVRE;
             }
         }
-
+        else if (estado_sistema == ADM_IRREG){
+            roda_teclado();
+            if (nova_tecla == TECLADO_PRESSIONADO){
+                
+                if (saida_teclado == '#'){ //Mostrar mais irregulares se tiver
+                    if (indice_irreg != -1){
+                        mostrar_irreg(indice_irreg +1);
+                    }
+                }
+                else if (saida_teclado == '*'){
+                    limpa_lcd ();
+                    lcd_cmd (PRIMEIRA_LINHA);
+                    envia_string ("1)REL 2)IRREG");
+                    estado_sistema = ADM_MENU;
+                }
+                
+                
+                nova_tecla = TECLADO_LIVRE;
+            }
+        }
         else if (estado_sistema == SELECAO_RUA) {
             roda_teclado_numerico();
             if (nova_tecla == TECLADO_PRESSIONADO){

@@ -38,6 +38,7 @@
 #define ADM_MENU           21
 #define SELECAO_RUA        22
 #define ADM_IRREG          23
+#define FORA_SERVICO       24
 
 int estado_sistema = 0; 
 int indice_placa = 0; 
@@ -546,12 +547,14 @@ int main(void) {
     while(1) {
         
         if (contador_inatividade >=60 && sistema_inativo == 0){ //30 segundos sem ninguem tocar no teclado
-            limpa_lcd();
-            estado_sistema = DIGITANDO_PLACA; //Volta para o estado inicial de digitar a placa
-            indice_placa = 0;
-            reset_memoria_teclado ();
-            sistema_inativo = 1;
-            flag_atualiza_relogio = 1;
+            if (estado_sistema != FORA_SERVICO){
+                limpa_lcd();
+                estado_sistema = DIGITANDO_PLACA; //Volta para o estado inicial de digitar a placa
+                indice_placa = 0;
+                reset_memoria_teclado ();
+                sistema_inativo = 1;
+                flag_atualiza_relogio = 1;
+            }
         }
 
 
@@ -600,6 +603,13 @@ int main(void) {
                     
                 }
                 nova_tecla = TECLADO_LIVRE;
+            }
+
+            if (!eh_horario_comercial()){
+                limpa_lcd();
+                lcd_cmd(PRIMEIRA_LINHA);
+                envia_string("DESLIGADO");
+                estado_sistema = FORA_SERVICO;
             }
         }
 
@@ -979,6 +989,17 @@ int main(void) {
         else if (estado_sistema == SUCESSO_CART_VIRT && resetar_tela == 1){
             resetar_tela = 0;
             estado_sistema = REQ_DADOS_ESTAC;
+        } 
+        else if (estado_sistema == FORA_SERVICO ){
+            if (eh_horario_comercial()){
+                limpa_lcd();
+                indice_placa = 0;
+                reset_memoria_teclado();
+                lcd_cmd(PRIMEIRA_LINHA); 
+                envia_string("DIGITE PLACA");
+                lcd_cmd(SEGUNDA_LINHA); 
+                estado_sistema = DIGITANDO_PLACA;
+            }
         }
 
         // novo_caracter_recebido_UART();

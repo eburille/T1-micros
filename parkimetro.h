@@ -2,9 +2,9 @@
 #define PARKIMETRO__H
 
 /////  RUAS //////
-#define OSVALDO               0
-#define SARMENT               1
-#define JPESSOA               2
+#define OSVALDO              '0'
+#define SARMENT              '1'
+#define JPESSOA              '2'
 
 #define t_30_min              0 //  30
 #define t_1_hora              1 //  60
@@ -56,12 +56,12 @@ void adiciona_carro(char placa[7], char especial, char tempo_contratado, char ru
 
 void verifica_carros_regulares();
 
-void verifica_carros_presentes(char placas[][8], char num_placas);
+void verifica_carros_presentes(char placas[][7], char num_placas);
 
 void gerenciar_parkimetro();
 
 void printa_lista_carros();
 
-void verifica_carros_parasitas(char placas[][8], char num_placas);
+void verifica_carros_parasitas(char placas[][7], char num_placas);
 
 #endif

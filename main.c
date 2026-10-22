@@ -36,7 +36,7 @@
 #define ADM_SENHA          19
 #define ADM_AJUSTE_TEMPO   20
 #define ADM_MENU           21
-
+#define SELECAO_RUA        22
 
 int estado_sistema = 0; 
 int indice_placa = 0; 
@@ -161,17 +161,11 @@ void verifica_placa(){
         }
         
         limpa_lcd();
-        lcd_cmd(PRIMEIRA_LINHA); 
-        if (flag_vaga_especial){
-            envia_string("1)30min(R$0)");
-            lcd_cmd(SEGUNDA_LINHA);
-            envia_string("2)1h 3)2h 4)>2h");
-        }else{
-            envia_string("TEMPO: 1)30min");
-            lcd_cmd(SEGUNDA_LINHA);
-            envia_string("2)1h 3)1h30 4)2h");
-        }
-        estado_sistema = SELECAO_TEMPO;
+        lcd_cmd(PRIMEIRA_LINHA);
+        envia_string("0)OSV  1)SARM");
+        lcd_cmd(SEGUNDA_LINHA);
+        envia_string("2)JaoP.");
+        estado_sistema = SELECAO_RUA;
     }
 }
 
@@ -675,6 +669,7 @@ int main(void) {
                 nova_tecla = TECLADO_LIVRE;
             }       
         }
+
         else if (estado_sistema == ADM_AJUSTE_TEMPO){
             roda_teclado_numerico();
             if (nova_tecla == TECLADO_PRESSIONADO){
@@ -698,6 +693,39 @@ int main(void) {
                 }
                 else{
                     registra_caractere_confirmado(saida_teclado);
+                }
+                nova_tecla = TECLADO_LIVRE;
+            }
+        }
+
+        else if (estado_sistema == SELECAO_RUA) {
+            roda_teclado_numerico();
+            if (nova_tecla == TECLADO_PRESSIONADO){
+                if (saida_teclado == '*'){ // '*' volta para o inicio
+                    resetar_tela = 0;
+                    limpa_lcd();
+                    lcd_cmd(PRIMEIRA_LINHA); //posiciona cursor na primeira linha
+                    envia_string("DIGITE PLACA");
+                    lcd_cmd(SEGUNDA_LINHA); //cursor na segunda linha
+                    indice_placa = 0;
+                    reset_memoria_teclado();
+                    estado_sistema = DIGITANDO_PLACA; //Volta para o estado inicial de dgitar a placa
+                } else if ( (saida_teclado >= '0') && (saida_teclado <= '2')) {
+                    rua_escolhida = saida_teclado;
+                    limpa_lcd();
+                    lcd_cmd(PRIMEIRA_LINHA); 
+                    if (flag_vaga_especial){
+                        envia_string("1)30min(R$0)");
+                        lcd_cmd(SEGUNDA_LINHA);
+                        envia_string("2)1h 3)2h 4)>2h");
+                    }else{
+                        envia_string("TEMPO: 1)30min");
+                        lcd_cmd(SEGUNDA_LINHA);
+                        envia_string("2)1h 3)1h30 4)2h");
+                    }
+                    estado_sistema = SELECAO_TEMPO;
+                    UART_transmit(saida_teclado);
+                    reset_memoria_teclado();
                 }
                 nova_tecla = TECLADO_LIVRE;
             }
@@ -743,11 +771,12 @@ int main(void) {
                 }
                 else if (saida_teclado == '*'){ //Se apertar para voltar
                     limpa_lcd();
-                    lcd_cmd(PRIMEIRA_LINHA); //posiciona cursor na primeira linha
-                    envia_string("DIGITE PLACA");
-                    lcd_cmd(SEGUNDA_LINHA); //cursor na segunda linha
-                    indice_placa = 0;
-                    estado_sistema = DIGITANDO_PLACA;
+                    lcd_cmd(PRIMEIRA_LINHA);
+                    envia_string("0)OSV  1)SARM");
+                    lcd_cmd(SEGUNDA_LINHA);
+                    envia_string("2)JP");
+                    reset_memoria_teclado();
+                    estado_sistema = SELECAO_RUA;
                 }
                 
 

@@ -1009,7 +1009,7 @@ int main(void) {
             msg = le_mensagem();
 
             if(estado_sistema == AGUARDA_E && msg.tipo == MSG_DADOS_ESTACIONAMENTO){ //Se o tipo da mensagem for 'E', quer dizer que recebeu os dados do estacionamento
-                adiciona_carro(placa_digitada, flag_vaga_especial, tempo_escolhido, rua_escolhida);
+                adiciona_carro(placa_digitada, flag_vaga_especial, tempo_escolhido, rua_escolhida, REGULAR);
                 limpa_lcd();
                 lcd_cmd (PRIMEIRA_LINHA);
                 envia_string ("COMPROVANTE?");

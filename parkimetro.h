@@ -11,6 +11,7 @@
 #define t_1h_30m              2 //  90
 #define t_2_hora              3 // 120
 #define t_ilimitado           4 // 500
+#define t_0                   5
 
 #define TOLERANCIA_MIN        3
 
@@ -55,7 +56,7 @@ extern int indice_irreg;
 
 // extern Carro carros_irregulares[/* NUMERO MAXIMO DE CARROS */];
 
-void adiciona_carro(char placa[7], char especial, char tempo_contratado, char rua);
+void adiciona_carro(char placa[7], char especial, char tempo_contratado, char rua, char esta_regular);
 
 void verifica_carros_regulares();
 

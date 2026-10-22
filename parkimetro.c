@@ -22,14 +22,16 @@
 // Rua ruas[3] = {osvaldo, sarmento, joao};
 
 volatile char num_carros = 0;
-int tempo_array[] = {30, 60, 90, 120, 500};
+int tempo_array[] = {30, 60, 90, 120, 500, 0};
 Carro carros[NUM_MAX_CARROS];
 volatile char num_carros_irregulares = 0;
 volatile char num_carros_parasitas = 0;
 int indice_irreg = 0;
 
+Carro carros_parasitas[NUM_MAX_CARROS];
+Carro carros_parasitas_tolerancia[NUM_MAX_CARROS];
 
-void adiciona_carro(char placa[7], char especial, char tempo_contratado, char rua){
+void adiciona_carro(char placa[7], char especial, char tempo_contratado, char rua, char esta_regular){
     char hora_atual[6];
     
     Carro novo_carro; //= {placa, especial, hora_atual, tempo_contratado, REGULAR, rua};
@@ -44,12 +46,13 @@ void adiciona_carro(char placa[7], char especial, char tempo_contratado, char ru
     strcpy(novo_carro.placa, placa);
     novo_carro.especial = especial;
     novo_carro.tempo_contratado = tempo_contratado;
-    novo_carro.esta_regular = REGULAR;
+    novo_carro.esta_regular = esta_regular;
     novo_carro.rua = rua;
 
     carros[num_carros] = novo_carro;
     num_carros++;
 }
+
 
 /// @brief Verificar se um carro ja ultrapassou o tempo limite de permanência contratada + tolerância
 /// @param carro Carro a ter a regularidade verificada
@@ -85,6 +88,7 @@ void remove_carro(char i){
     }
     num_carros--;
 }
+
 
 char compara_placas(char placa1[7], char placa2[7]){
     UART_envia_string("\nplaca1 - ");
@@ -161,6 +165,8 @@ void verifica_carros_parasitas(char placas[][7], char num_placas){
     int i = 1;
     int j = 0;
 
+    char rua = pega_rua(placas[0]);
+    Carro carro_parasita;
     char eh_parasita = N_TEM_PARASITA;
 
     num_carros_parasitas = 0;
@@ -170,6 +176,7 @@ void verifica_carros_parasitas(char placas[][7], char num_placas){
     UART_transmit('\n');
 
 
+    // VERIFICA COM AS PLACAS DOS CARROS ESTACIONADOS
     for (i; i <= num_placas; i++){
         eh_parasita = TEM_PARASITA;
         j=0;
@@ -179,10 +186,9 @@ void verifica_carros_parasitas(char placas[][7], char num_placas){
                 break;
             }
         }
+
         if (eh_parasita == TEM_PARASITA){
-            num_carros_parasitas++;
-            UART_envia_string("\nTEM PARASITA - ");
-            UART_transmit(num_carros_parasitas + 48);
+            adiciona_carro(placas[i], N_ESPECIAL, t_0, rua, REGULAR);
         }
     }
 }

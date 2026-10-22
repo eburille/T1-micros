@@ -7,6 +7,9 @@
 #define CARRO_PRESENTE  0
 #define CARRO_AUSENTE   1
 
+#define TEM_PARASITA    1
+#define N_TEM_PARASITA  0
+
 // Rua osvaldo = {"OSVALDO", 0, 0};
 // Rua sarmento = {"SARMENT", 0, 0};
 // Rua joao = {"JPESSOA", 0, 0};
@@ -35,7 +38,7 @@ void adiciona_carro(char placa[7], char especial, char tempo_contratado, char ru
     novo_carro.especial = especial;
     novo_carro.tempo_contratado = tempo_contratado;
     novo_carro.esta_regular = REGULAR;
-    novo_carro.rua = -1;
+    novo_carro.rua = rua;
 
     carros[num_carros] = novo_carro;
     num_carros++;
@@ -76,6 +79,15 @@ void remove_carro(char i){
 }
 
 char compara_placas(char placa1[7], char placa2[7]){
+    UART_envia_string("\nplaca1 - ");
+    UART_transmit(placa1[0]);
+    UART_transmit(placa1[1]);
+    UART_transmit(placa1[2]);
+    UART_transmit(placa1[3]);
+    UART_transmit(placa1[4]);
+    UART_transmit(placa1[5]);
+    UART_transmit(placa1[6]);
+    UART_transmit('\n');
     char i = 0;
     for (i; i < 7; i++){
         if (placa1[i] != placa2[i]){
@@ -85,21 +97,49 @@ char compara_placas(char placa1[7], char placa2[7]){
     return 1;
 }
 
+char pega_rua(char rua[7]){
+    UART_transmit(rua[0]);
+    UART_transmit(rua[1]);
+    UART_transmit(rua[2]);
+    UART_transmit(rua[3]);
+    UART_transmit(rua[4]);
+    UART_transmit(rua[5]);
+    UART_transmit(rua[6]);
+    UART_transmit('\n');
+
+    if (rua[0] == 'O'){
+        UART_envia_string("ENTROU EM OSVALDO");
+        return OSVALDO;
+    }else if (rua[0] == 'J'){
+        UART_envia_string("ENTROU EM JPESSOA");
+        return JPESSOA;
+    }else if (rua[0] == 'S'){
+        UART_envia_string("ENTROU EM SARMENT");
+        return SARMENT;
+    }
+}
+
 /// @brief Recebe uma lista de placas dos carros presentes e remove os carros que não estão nessa lista
 /// @param placas Lista dos carros presentes
-void verifica_carros_presentes(char placas[][8], char num_placas){
+void verifica_carros_presentes(char placas[][7], char num_placas){
     int i = 0;
     int j = 1;
 
+    char rua = pega_rua(placas[0]);
     char carro_presente = CARRO_AUSENTE;
+
     for (i; i < num_carros; i++){
+        j=1;
+        if (carros[i].rua != rua){
+            break;
+        }
         for (j; j <= num_placas; j++){
+            // UART_envia_string("roda compara placas\n");
             if (compara_placas(carros[i].placa, placas[j])){
                 carro_presente = CARRO_PRESENTE;
                 break;
             }
         }
-
         if (carro_presente == CARRO_AUSENTE){
             remove_carro(i);
         }
@@ -109,17 +149,32 @@ void verifica_carros_presentes(char placas[][8], char num_placas){
 
 /// @brief Recebe uma lista de placas dos carros presentes e remove os carros que não estão nessa lista
 /// @param placas Lista dos carros presentes
-void verifica_carros_parasitas(char placas[][8], char num_placas){
+void verifica_carros_parasitas(char placas[][7], char num_placas){
     int i = 1;
     int j = 0;
 
+    char eh_parasita = N_TEM_PARASITA;
+
     num_carros_parasitas = 0;
-    for (i; i <= num_placas; j++){
-        for (j; j < num_carros; i++){
+
+    UART_envia_string("\nNumero placas: ");
+    UART_transmit(num_placas + 48);
+    UART_transmit('\n');
+
+
+    for (i; i <= num_placas; i++){
+        eh_parasita = TEM_PARASITA;
+        j=0;
+        for (j; j < num_carros; j++){
             if (compara_placas(placas[i], carros[j].placa)){
-                num_carros_parasitas++;
+                eh_parasita = N_TEM_PARASITA;
                 break;
             }
+        }
+        if (eh_parasita == TEM_PARASITA){
+            num_carros_parasitas++;
+            UART_envia_string("\nTEM PARASITA - ");
+            UART_transmit(num_carros_parasitas + 48);
         }
     }
 }

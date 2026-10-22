@@ -816,7 +816,7 @@ int main(void) {
 
             else if(msg.tipo == CONDICAO_VIA){
 
-                // verifica_carros_presentes(msg.string, (msg.tamanho - 7)/7);
+                verifica_carros_presentes(msg.string, (msg.tamanho - 7)/7);
                 verifica_carros_parasitas(msg.string, (msg.tamanho - 7)/7);
             }
 

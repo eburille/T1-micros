@@ -16,8 +16,6 @@ Mensagem mensagem_recebida;
 
 volatile char num_caracteres_a_receber;
 
-int chave=0;
-
 
 void init_gerenciador_msgs(){
     estado_gerenciador = ESPERA;

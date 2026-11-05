@@ -1029,8 +1029,8 @@ int main(void) {
                 nova_tecla = TECLADO_LIVRE;
             }
             if(preco_a_pagar == preco_pago){
-                valor_pago = 0;
-                estado_sistema == QUER_COMPROVANTE 
+                preco_pago = 0;
+                estado_sistema = QUER_COMPROVANTE;
             }
 
         }

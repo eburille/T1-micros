@@ -42,7 +42,7 @@ void lcd_data(unsigned char disp_data){
 
 void lcd_init (){
     DDRC |= (1 << RS) | (1 << E);
-    DDRD |= 0xF0;
+    DDRA |= 0xF0;
 
 	LCD_comando_porta &= ~(1<<RS);
 	

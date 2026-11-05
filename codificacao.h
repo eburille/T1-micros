@@ -1,15 +1,15 @@
 #ifndef CODIFICACAO__H
 #define CODIFICACAO__H
 
-#include "gerenciador_msgs.h"
-#include "mensagem.h"
 
-int chave;
+#define TAM_MAX      78   /* tamanho maximo de uma mensagem (com o '\0') */
+
+extern int chave;
 
 void codifica();
 
 void decodifica();
 
-int encontra_chave();
+void encontra_chave();
 
 #endif

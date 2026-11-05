@@ -135,7 +135,10 @@ void tempo_recarga(){
             lcd_cmd(SEGUNDA_LINHA);
             envia_string("2)1h 3)2h 4)>2h");
         }else{
-            envia_string("SE FUDEU");
+            lcd_cmd(PRIMEIRA_LINHA);
+            envia_string("LIMITE");
+            lcd_cmd(SEGUNDA_LINHA);
+            envia_string("ESGOTADO");
         }
     }
 }
@@ -497,7 +500,7 @@ void imprime_comprovante(signed char tempo_escolhido, int preco_a_pagar){
         
         int min_totais = carros[id_carro].min_entrada + tempo_minutos;
         int min_vencimento = min_totais % 60;
-        int hora_vencimento = (hora + (min_totais/60)) %24;
+        int hora_vencimento = (carros[id_carro].hora_entrada + (min_totais/60)) %24;
 
         fflush(stdin);
         tamanho = sprintf(payload_comprovante, 
@@ -505,6 +508,7 @@ void imprime_comprovante(signed char tempo_escolhido, int preco_a_pagar){
         preco_a_pagar / 100, preco_a_pagar % 100, 
         placa_digitada, 
         hora_vencimento, min_vencimento);
+        carros[id_carro].tempo_contratado = tempo_escolhido;
     }
    
     UART_transmit('P');
@@ -848,17 +852,17 @@ int main(void) {
                     if (saida_teclado == '1'){
                         if (flag_vaga_especial)preco_a_pagar = 0;
                         else preco_a_pagar = 200;
-                        tempo_escolhido = t_30_min; //30min
+                        tempo_escolhido = t_1_hora; //30min
                     }
                     else if (saida_teclado == 'A'){
                         if (flag_vaga_especial)preco_a_pagar = 200;
                         else preco_a_pagar = 350;
-                        tempo_escolhido = t_1_hora; //30min a 1h
+                        tempo_escolhido = t_1h_30m; //30min a 1h
                     }
                     else if (saida_teclado == 'D'){
                     if (!flag_vaga_especial){
                         preco_a_pagar = 450;
-                        tempo_escolhido = t_1h_30m; //1h a 1h e 30min
+                        tempo_escolhido = t_2_hora; //1h a 1h e 30min
                     }
                 }
                     else if (saida_teclado =='G'){
@@ -873,12 +877,12 @@ int main(void) {
                     if (saida_teclado == '1'){
                         if (flag_vaga_especial)preco_a_pagar = 0;
                         else preco_a_pagar = 200;
-                        tempo_escolhido = t_30_min; //30min
+                        tempo_escolhido = t_1h_30m; //30min
                     }
                     else if (saida_teclado == 'A'){
                         if (flag_vaga_especial)preco_a_pagar = 200;
                         else preco_a_pagar = 350;
-                        tempo_escolhido = t_1_hora; //30min a 1h
+                        tempo_escolhido = t_2_hora; //30min a 1h
                     }
                     else if (saida_teclado =='G'){
                         if (flag_vaga_especial){   
@@ -891,7 +895,7 @@ int main(void) {
                     if (saida_teclado == '1'){
                         if (flag_vaga_especial)preco_a_pagar = 0;
                         else preco_a_pagar = 200;
-                        tempo_escolhido = t_30_min; //30min
+                        tempo_escolhido = t_2_hora; //30min
                     }
                     else if (saida_teclado =='G'){
                         if (flag_vaga_especial){   
@@ -905,8 +909,6 @@ int main(void) {
                 }
 
                 if (tempo_escolhido>=0){
-                    carros[id_carro].tempo_contratado = carros[id_carro].tempo_contratado + tempo_escolhido;
-                    tempo_escolhido = carros[id_carro].tempo_contratado;
                     limpa_lcd ();
                     lcd_cmd(PRIMEIRA_LINHA);
                     
@@ -1205,7 +1207,16 @@ int main(void) {
             msg = le_mensagem();
 
             if(estado_sistema == AGUARDA_E && msg.tipo == MSG_DADOS_ESTACIONAMENTO){ //Se o tipo da mensagem for 'E', quer dizer que recebeu os dados do estacionamento
-                adiciona_carro(placa_digitada, flag_vaga_especial, tempo_escolhido, rua_escolhida, REGULAR);
+                if (id_carro == -1){
+                    //Carro novo: cria a entrada (hora de entrada = agora)
+                    adiciona_carro(placa_digitada, flag_vaga_especial, tempo_escolhido, rua_escolhida, REGULAR);
+                } else {
+                    //Recarga: NAO adiciona de novo (evita duplicar na lista).
+                    //So estende a modalidade contratada, preservando a hora de
+                    //entrada original, que é a base usada por verifica_carro_irregular().
+                    carros[id_carro].tempo_contratado = tempo_escolhido;
+                    carros[id_carro].esta_regular = REGULAR;
+                }
                 limpa_lcd();
                 lcd_cmd (PRIMEIRA_LINHA);
                 envia_string ("COMPROVANTE?");

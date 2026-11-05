@@ -255,6 +255,7 @@ void verifica_cartao_virtual(int preco){
             envia_string("PAGAMENTO OK");
             lcd_cmd (SEGUNDA_LINHA);
             char msg_saldo[16];
+            fflush(stdin);
             sprintf(msg_saldo, "SALDO:R$%d,%02d", saldo_cartao_virtual[indice_virtual]/100, saldo_cartao_virtual[indice_virtual]%100);
             envia_string(msg_saldo);
             estado_sistema = SUCESSO_CART_VIRT;
@@ -427,13 +428,15 @@ void apaga_caractere_lcd(){
     
 }
 void envia_dados_estacionamento(char tempo){
-    char pacote_estacionamento[11];
+    char pacote_estacionamento[30];
     
     //Formato é 'P''E''PLACA_DO_CARRO''MODALIDADE'
-    sprintf(pacote_estacionamento,"%s%d", placa_digitada,tempo); //Isso tudo ai vai ter que estar codificado depois
-    UART_envia_comando("PE");
+    //fflush(stdin);
+    sprintf(pacote_estacionamento,"%2s%2d", placa_digitada,tempo); //Isso tudo ai vai ter que estar codificado depois
+    UART_transmit('P');
+    UART_transmit('E');
     UART_envia_string(pacote_estacionamento);
-    //UART_envia_string("\n\n");
+    UART_envia_string("\n\n");
     limpa_lcd ();
     lcd_cmd (PRIMEIRA_LINHA);
     envia_string ("REGISTRANDO...");
@@ -447,6 +450,7 @@ void envia_dados_pagamento(int preco){
     limpa_lcd ();
     lcd_cmd (PRIMEIRA_LINHA);
     envia_string ("CONFIRMANDO...");
+    fflush(stdin);
     int tamanho_payload = sprintf(pacote_dados, "%s%s%d", cartao_digitado, senha_cartao_digitado, preco);
     //Formato é 'P''P''N_BYTES''NUMERO_CARTAO''SENHA_CARTAO''VALOR'
     UART_envia_string("\n\n");
@@ -460,6 +464,7 @@ void imprime_comprovante(signed char tempo_escolhido, int preco_a_pagar){
     char payload_comprovante[85];
     int tamanho = 0;
     if (tempo_escolhido == t_ilimitado){
+        fflush(stdin);
         tamanho = sprintf(payload_comprovante, "PARKMICROS\r\nPagamento: R$%d,%02d\r\nPlaca: %s\r\nValido ate: ILIMITADO\r\n", 
             preco_a_pagar / 100, preco_a_pagar % 100, 
             placa_digitada);
@@ -476,7 +481,7 @@ void imprime_comprovante(signed char tempo_escolhido, int preco_a_pagar){
         int min_vencimento = min_totais % 60;
         int hora_vencimento = (hora + (min_totais/60)) %24;
 
-
+        fflush(stdin);
         tamanho = sprintf(payload_comprovante, 
         "PARKMICROS\r\nPagamento: R$%d,%02d\r\nPlaca: %s\r\nValido ate: %02d:%02d\r\n", 
         preco_a_pagar / 100, preco_a_pagar % 100, 
@@ -612,6 +617,7 @@ int main(void) {
             if (sistema_inativo == 1 && flag_atualiza_relogio == 1){ //Se estiver inativa, exibe o relogio
                 flag_atualiza_relogio = 0;
                 char msg_hora[22];
+                fflush(stdin);
                 sprintf(msg_hora, "%02d/%02d/%04d %02d:%02d", dia, mes, ano, hora, min);
                 lcd_cmd(0x80);
                 envia_string(msg_hora);
@@ -807,7 +813,7 @@ int main(void) {
                         envia_string("2)1h 3)1h30 4)2h");
                     }
                     estado_sistema = SELECAO_TEMPO;
-                    UART_transmit(saida_teclado);
+                    
                     reset_memoria_teclado();
                 }
                 nova_tecla = TECLADO_LIVRE;
@@ -886,6 +892,7 @@ int main(void) {
                     
                     
                     if (preco_a_pagar != 0){
+                        fflush(stdin);
                         sprintf(msg_valor_pagamento, "VALOR: R$%d,%02d", preco_a_pagar / 100, preco_a_pagar % 100);
                         envia_string (msg_valor_pagamento);
                         lcd_cmd(SEGUNDA_LINHA);
@@ -955,6 +962,7 @@ int main(void) {
                     
                     
                     if (preco_a_pagar != 0){
+                        fflush(stdin);
                         sprintf(msg_valor_pagamento, "VALOR: R$%d,%02d", preco_a_pagar / 100, preco_a_pagar % 100);
                         envia_string (msg_valor_pagamento);
                         lcd_cmd(SEGUNDA_LINHA);
@@ -1030,6 +1038,7 @@ int main(void) {
                 lcd_cmd(PRIMEIRA_LINHA);
                 envia_string ("VALOR DEPOSITADO:");
                 lcd_cmd(SEGUNDA_LINHA);
+                fflush(stdin);
                 sprintf(msg_valor_pago, "R$%d,%02d", preco_pago / 100, preco_pago % 100);
                 envia_string (msg_valor_pago);
 
@@ -1244,7 +1253,7 @@ int main(void) {
                 printa_lista_carros();
             }
 
-            UART_envia_string("\nMENSAGEM RECEBIDA\n");
+            // UART_envia_string("\nMENSAGEM RECEBIDA\n");
             // UART_envia_string(msg.string);
         }
 

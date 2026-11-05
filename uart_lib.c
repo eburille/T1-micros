@@ -59,7 +59,7 @@ void UART_envia_string(char *string){
     int i = 0;
     char string_cod[TAM_MAX];
 
-    codifica(string_cod);
+    //codifica(string_cod);
 
     while (string_cod[i] != '\0'){
         UART_transmit(string[i]);

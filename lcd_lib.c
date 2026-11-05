@@ -16,28 +16,35 @@ void lcd_cmd (unsigned char cmd){
 	LCD_comando_porta |= (1<<E);
 	delay_1ms();
 	LCD_comando_porta &= ~(1<<E);
-	
+
+	delay_1ms();
+
 	LCD_dado_porta = (LCD_dado_porta & 0x0F) | ((cmd<<4) & 0xF0);
+
 	LCD_comando_porta |= (1<<E);
 	delay_1ms();
 	LCD_comando_porta &= ~(1<<E);
-	
+	delay_1ms();
 }
 
 
 void lcd_data(unsigned char disp_data){
 	LCD_comando_porta |= (1<<RS);
-	
+	delay_1ms();
+
 	LCD_dado_porta = (LCD_dado_porta & 0x0F) | (disp_data & 0xF0);
 	LCD_comando_porta |= (1<<E);
 	delay_1ms();
 	LCD_comando_porta &= ~(1<<E);
 	
+	delay_1ms();
+
 	LCD_dado_porta = (LCD_dado_porta & 0x0F) | ((disp_data<<4) & 0xF0);
+	
 	LCD_comando_porta |= (1<<E);
 	delay_1ms();
 	LCD_comando_porta &= ~(1<<E);
-	
+	delay_1ms();
 }
 
 void lcd_init (){

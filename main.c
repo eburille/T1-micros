@@ -214,22 +214,24 @@ void verifica_placa(){
         }
         for(id_carro =0; id_carro>NUM_MAX_CARROS;id_carro++){
             
+
             if (strcmp(carros[id_carro].placa, placa_digitada) == 0) {
 
                 tempo_recarga();
                 estado_sistema = RECARGA;
 
-            } else {
-            
+            }
+
+        }
+        if(estado_sistema != RECARGA){
             limpa_lcd();
             lcd_cmd(PRIMEIRA_LINHA);
             envia_string("0)OSV  1)SARM");
             lcd_cmd(SEGUNDA_LINHA);
             envia_string("2)JaoP.");
             estado_sistema = SELECAO_RUA;
-            }
-
         }
+           
     
     }
 }
@@ -428,10 +430,10 @@ void envia_dados_estacionamento(char tempo){
     char pacote_estacionamento[11];
     
     //Formato é 'P''E''PLACA_DO_CARRO''MODALIDADE'
-    sprintf(pacote_estacionamento,"PE%s%d", placa_digitada,tempo); //Isso tudo ai vai ter que estar codificado depois
-
+    sprintf(pacote_estacionamento,"%s%d", placa_digitada,tempo); //Isso tudo ai vai ter que estar codificado depois
+    UART_envia_comando("PE");
     UART_envia_string(pacote_estacionamento);
-    UART_envia_string("\n\n");
+    //UART_envia_string("\n\n");
     limpa_lcd ();
     lcd_cmd (PRIMEIRA_LINHA);
     envia_string ("REGISTRANDO...");
@@ -978,6 +980,7 @@ int main(void) {
                     lcd_cmd(PRIMEIRA_LINHA);
                     envia_string ("VALOR DEPOSITADO:");
                     lcd_cmd(SEGUNDA_LINHA);
+                    envia_string ("R$0,0");
                     reset_memoria_teclado();
                     estado_sistema = MOEDA;
                 }
@@ -1023,14 +1026,19 @@ int main(void) {
                 if (saida_teclado == 'B'){
                     preco_pago += 50;
                 }
+                limpa_lcd();
+                lcd_cmd(PRIMEIRA_LINHA);
+                envia_string ("VALOR DEPOSITADO:");
+                lcd_cmd(SEGUNDA_LINHA);
                 sprintf(msg_valor_pago, "R$%d,%02d", preco_pago / 100, preco_pago % 100);
                 envia_string (msg_valor_pago);
 
                 nova_tecla = TECLADO_LIVRE;
             }
-            if(preco_a_pagar == preco_pago){
+            if(preco_a_pagar <= preco_pago){
                 preco_pago = 0;
-                estado_sistema = QUER_COMPROVANTE;
+
+                estado_sistema = REQ_DADOS_ESTAC;
             }
 
         }
@@ -1200,17 +1208,17 @@ int main(void) {
             }
             else if (msg.tipo == MSG_HORARIO){ // 
                 ajustar_hora(msg.string); 
-                UART_envia_string ("PH"); //mensagem de resposta para o servidor externo
+                UART_envia_comando ("PH"); //mensagem de resposta para o servidor externo
             }
 
             else if(msg.tipo == MSG_CONDICAO_VIA){
-                UART_envia_string("PV");
+                UART_envia_comando("PV");
                 verifica_carros_presentes(msg.string, (msg.tamanho - 7)/7);
                 verifica_carros_parasitas(msg.string, (msg.tamanho - 7)/7);
             }
 
             else if(msg.tipo == MSG_CARTAO_INSERIDO){
-                UART_envia_string("PC");
+                UART_envia_comando("PC");
 
                 if (estado_sistema == CARTAO){
                     cartao_digitado[0] = msg.string[0];

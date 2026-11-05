@@ -66,3 +66,13 @@ void UART_envia_string(char *string){
         i++;
     }
 }
+
+void UART_envia_comando(char *string){
+    int i = 0;
+    char string_cod[TAM_MAX];
+
+    while (string_cod[i] != '\0'){
+        UART_transmit(string[i]);
+        i++;
+    }
+}

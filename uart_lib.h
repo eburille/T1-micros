@@ -6,6 +6,7 @@
 void UART_init();
 void UART_transmit(char data);
 void UART_envia_string(char *string);
+void UART_envia_comando(char *string);
 char novo_caracter_recebido_UART();
 
 #endif

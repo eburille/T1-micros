@@ -2,7 +2,7 @@
 #include "uart_lib.h"
 #include "delay.h"
 
-int CIRCBUFFSIZE = 7;
+int CIRCBUFFSIZE = 18;
 
 BufferCircularMsg msg_buff;
 BufferCircularChar char_buff;

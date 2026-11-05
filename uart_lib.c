@@ -57,11 +57,11 @@ char novo_caracter_recebido_UART(){
 
 void UART_envia_string(char *string){
     int i = 0;
-    char string_cod[TAM_MAX];
+    //char string_cod[TAM_MAX];
 
     //codifica(string_cod);
 
-    while (string_cod[i] != '\0'){
+    while (string[i] != '\0'){
         UART_transmit(string[i]);
         i++;
     }
@@ -69,9 +69,9 @@ void UART_envia_string(char *string){
 
 void UART_envia_comando(char *string){
     int i = 0;
-    char string_cod[TAM_MAX];
+    //char string_cod[TAM_MAX];
 
-    while (string_cod[i] != '\0'){
+    while (string[i] != '\0'){
         UART_transmit(string[i]);
         i++;
     }

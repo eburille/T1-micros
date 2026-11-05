@@ -212,14 +212,15 @@ void verifica_placa(){
                 break;
             }
         }
-        for(id_carro =0; id_carro>NUM_MAX_CARROS;id_carro++){
+        id_carro = -1;
+        for(int i =0; i < num_carros;i++){
             
 
-            if (strcmp(carros[id_carro].placa, placa_digitada) == 0) {
-
+            if (strcmp(carros[i].placa, placa_digitada) == 0) {
+                id_carro = i;
                 tempo_recarga();
                 estado_sistema = RECARGA;
-
+                break;
             }
 
         }
@@ -470,14 +471,31 @@ void imprime_comprovante(signed char tempo_escolhido, int preco_a_pagar){
             placa_digitada);
     }
 
-    else {
-         int tempo_minutos = 0;
+    else if (id_carro == -1) {
+        int tempo_minutos = 0;
         if (tempo_escolhido == t_30_min) tempo_minutos = 30;
         else if (tempo_escolhido == t_1_hora) tempo_minutos = 60;
         else if (tempo_escolhido == t_1h_30m) tempo_minutos = 90;
         else if (tempo_escolhido == t_2_hora) tempo_minutos = 120;
         
         int min_totais = min + tempo_minutos;
+        int min_vencimento = min_totais % 60;
+        int hora_vencimento = (hora + (min_totais/60)) %24;
+
+        fflush(stdin);
+        tamanho = sprintf(payload_comprovante, 
+        "PARKMICROS\r\nPagamento: R$%d,%02d\r\nPlaca: %s\r\nValido ate: %02d:%02d\r\n", 
+        preco_a_pagar / 100, preco_a_pagar % 100, 
+        placa_digitada, 
+        hora_vencimento, min_vencimento);
+    } else { // Caso seja recarga
+        int tempo_minutos = 0;
+        if (tempo_escolhido == t_30_min) tempo_minutos = 30;
+        else if (tempo_escolhido == t_1_hora) tempo_minutos = 60;
+        else if (tempo_escolhido == t_1h_30m) tempo_minutos = 90;
+        else if (tempo_escolhido == t_2_hora) tempo_minutos = 120;
+        
+        int min_totais = carros[id_carro].min_entrada + tempo_minutos;
         int min_vencimento = min_totais % 60;
         int hora_vencimento = (hora + (min_totais/60)) %24;
 
@@ -506,8 +524,8 @@ void imprime_comprovante(signed char tempo_escolhido, int preco_a_pagar){
     
 }
 ISR (TIMER1_COMPA_vect){
-    if (estado_sistema == DIGITANDO_PLACA || estado_sistema == SELECAO_TEMPO || estado_sistema == MENU_PAGAMENTO|| //depois penso em um jeito mais inteligente de fazer isso kkkkkkkkkkkkkkkkkk bagulho feio
-        estado_sistema == CARTAO || estado_sistema == CARTAO_SENHA || estado_sistema == QUER_COMPROVANTE || estado_sistema == ADM_MENU ||estado_sistema == ADM_IRREG){ 
+    if (estado_sistema == DIGITANDO_PLACA || estado_sistema == SELECAO_TEMPO || estado_sistema == MENU_PAGAMENTO|| 
+        estado_sistema == CARTAO || estado_sistema == CARTAO_SENHA || estado_sistema == QUER_COMPROVANTE || estado_sistema == ADM_MENU ||estado_sistema == ADM_IRREG ||estado_sistema == RECARGA ){ 
         
         confirmar_tecla = 1;
         TCCR1B &= ~((1 << CS12) | (1 << CS11) | (1 << CS10)); //desliga o timer
@@ -887,6 +905,8 @@ int main(void) {
                 }
 
                 if (tempo_escolhido>=0){
+                    carros[id_carro].tempo_contratado = carros[id_carro].tempo_contratado + tempo_escolhido;
+                    tempo_escolhido = carros[id_carro].tempo_contratado;
                     limpa_lcd ();
                     lcd_cmd(PRIMEIRA_LINHA);
                     

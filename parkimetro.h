@@ -51,7 +51,7 @@ extern Carro carros[NUM_MAX_CARROS];
 extern volatile char num_carros_irregulares;
 extern volatile char num_carros_parasitas;
 extern int indice_irreg;
-
+extern volatile char num_carros;
 
 
 // extern Carro carros_irregulares[/* NUMERO MAXIMO DE CARROS */];

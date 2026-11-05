@@ -6,13 +6,13 @@
 extern volatile int i_escrita;
 
 typedef struct {
-    Mensagem lista_mensagens[10];
+    Mensagem lista_mensagens[20];
     volatile int i_leitura;
     volatile int i_escrita;    
 }BufferCircularMsg;
 
 typedef struct {
-    char lista_caracter[10];
+    char lista_caracter[20];
     volatile int i_leitura;
     volatile int i_escrita;    
 }BufferCircularChar;

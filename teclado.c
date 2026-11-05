@@ -10,10 +10,10 @@
 #define C1 PH4
 #define C2 PH5
 
-#define L0 PB1
-#define L1 PB2
-#define L2 PB3
-#define L3 PB4
+#define L0 PB0
+#define L1 PB1
+#define L2 PB2
+#define L3 PB3
 
 char tecla_atual = '3';
 int confirmar_tecla;

@@ -6,7 +6,7 @@
 #define LCD_comando_porta PORTC
 #define RS PC0
 #define E PC1
-#define LCD_dado_porta PORTD
+#define LCD_dado_porta PORTA
 
 
 void lcd_cmd (unsigned char cmd){
@@ -42,7 +42,7 @@ void lcd_data(unsigned char disp_data){
 
 void lcd_init (){
     DDRC |= (1 << RS) | (1 << E);
-    DDRD |= 0xF0;
+    DDRA |= 0xF0;
 
 	LCD_comando_porta &= ~(1<<RS);
 	

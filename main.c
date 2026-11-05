@@ -39,13 +39,16 @@
 #define SELECAO_RUA        22
 #define ADM_IRREG          23
 #define FORA_SERVICO       24
+#define RECARGA            25
 
 int estado_sistema = 0; 
 int indice_placa = 0; 
+int preco_pago = 0;
 int indice_cartao = 0;
 int indice_cartao_senha = 0;
 int indice_senha_adm = 0;
 int indice_ajuste_tempo = 0;
+int id_carro = 0;
 char placa_digitada[8];
 char cartao_digitado [7];
 char senha_cartao_digitado [6];
@@ -86,6 +89,56 @@ char lista_placas_especiais[5][8] = {
 	"PDE3400" };
 
 
+void tempo_recarga(){
+    if (carros[id_carro].tempo_contratado == t_30_min){
+        limpa_lcd();
+        lcd_cmd(PRIMEIRA_LINHA);
+        if (flag_vaga_especial){
+            envia_string("1)30min(R$0)");
+            lcd_cmd(SEGUNDA_LINHA);
+            envia_string("2)1h 3)2h 4)>2h");
+        }else{
+            envia_string("TEMPO: 1)30min");
+            lcd_cmd(SEGUNDA_LINHA);
+            envia_string("2)1h 3)1h30");
+        }
+
+    } else if (carros[id_carro].tempo_contratado == t_1_hora) {
+        limpa_lcd();
+        lcd_cmd(PRIMEIRA_LINHA);
+        if (flag_vaga_especial){
+            envia_string("1)30min(R$0)");
+            lcd_cmd(SEGUNDA_LINHA);
+            envia_string("2)1h 3)2h 4)>2h");
+        }else{
+            envia_string("TEMPO: 1)30min");
+            lcd_cmd(SEGUNDA_LINHA);
+            envia_string("2)1h");
+        }
+
+    } else if (carros[id_carro].tempo_contratado == t_1h_30m) {
+        limpa_lcd();
+        lcd_cmd(PRIMEIRA_LINHA);
+        if (flag_vaga_especial){
+            envia_string("1)30min(R$0)");
+            lcd_cmd(SEGUNDA_LINHA);
+            envia_string("2)1h 3)2h 4)>2h");
+        }else{
+            envia_string("TEMPO: 1)30min");
+        }
+
+    } else if (carros[id_carro].tempo_contratado == t_2_hora) {
+        limpa_lcd();
+        lcd_cmd(PRIMEIRA_LINHA);
+        if (flag_vaga_especial){
+            envia_string("1)30min(R$0)");
+            lcd_cmd(SEGUNDA_LINHA);
+            envia_string("2)1h 3)2h 4)>2h");
+        }else{
+            envia_string("SE FUDEU");
+        }
+    }
+}
 void registra_caractere_confirmado(char letra){
     
     if (estado_sistema == DIGITANDO_PLACA){ 
@@ -125,8 +178,6 @@ void registra_caractere_confirmado(char letra){
         }
     }
 }
-
-
 void verifica_placa(){
     
     reset_memoria_teclado();
@@ -161,16 +212,27 @@ void verifica_placa(){
                 break;
             }
         }
-        
-        limpa_lcd();
-        lcd_cmd(PRIMEIRA_LINHA);
-        envia_string("0)OSV  1)SARM");
-        lcd_cmd(SEGUNDA_LINHA);
-        envia_string("2)JaoP.");
-        estado_sistema = SELECAO_RUA;
+        for(id_carro =0; id_carro>NUM_MAX_CARROS;id_carro++){
+            
+            if (strcmp(carros[id_carro].placa, placa_digitada) == 0) {
+
+                tempo_recarga();
+                estado_sistema = RECARGA;
+
+            } else {
+            
+            limpa_lcd();
+            lcd_cmd(PRIMEIRA_LINHA);
+            envia_string("0)OSV  1)SARM");
+            lcd_cmd(SEGUNDA_LINHA);
+            envia_string("2)JaoP.");
+            estado_sistema = SELECAO_RUA;
+            }
+
+        }
+    
     }
 }
-
 void verifica_cartao_virtual(int preco){
     int i;
     char placa_encontrada = 0;
@@ -216,7 +278,6 @@ void verifica_cartao_virtual(int preco){
     }
     
 }
-
 //Verifica só se é numero
 void verifica_cartao(){
     reset_memoria_teclado();
@@ -246,8 +307,6 @@ void verifica_cartao(){
     }
       
 }
-
-
 //Verifica só se é numero
 void verifica_senha_cartao (){
     reset_memoria_teclado();
@@ -274,7 +333,6 @@ void verifica_senha_cartao (){
         estado_sistema = REQ_PAGAMENTO;
     }
 }
-
 void verifica_senha_adm (){
     if (strcmp(senha_adm_digitada, "12345") ==0){
         limpa_lcd();
@@ -290,7 +348,6 @@ void verifica_senha_adm (){
         TCCR1B |= (1 << CS12);
     }
 }
-
 void verifica_hora_adm (){ 
     const int dias_meses[] = {0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
     int dias_maximos = 31; 
@@ -328,9 +385,6 @@ void verifica_hora_adm (){
     }
 
 }
-
-
-
 void apaga_caractere_lcd(){
     
     if(estado_sistema == DIGITANDO_PLACA){
@@ -370,7 +424,6 @@ void apaga_caractere_lcd(){
     }
     
 }
-
 void envia_dados_estacionamento(char tempo){
     char pacote_estacionamento[11];
     
@@ -386,7 +439,6 @@ void envia_dados_estacionamento(char tempo){
     estado_sistema = AGUARDA_E; //Estado onde está aguardando o 'S''E' do servidor externo
         
 }
-
 void envia_dados_pagamento(int preco){
     char pacote_dados [15];
 
@@ -402,7 +454,6 @@ void envia_dados_pagamento(int preco){
     UART_envia_string(pacote_dados);
     estado_sistema = AGUARDA_P; //Estado onde está aguardando o 'S''P' do servidor externo
 }
-
 void imprime_comprovante(signed char tempo_escolhido, int preco_a_pagar){
     char payload_comprovante[85];
     int tamanho = 0;
@@ -447,7 +498,6 @@ void imprime_comprovante(signed char tempo_escolhido, int preco_a_pagar){
     estado_sistema = DIGITANDO_PLACA;
     
 }
-
 ISR (TIMER1_COMPA_vect){
     if (estado_sistema == DIGITANDO_PLACA || estado_sistema == SELECAO_TEMPO || estado_sistema == MENU_PAGAMENTO|| //depois penso em um jeito mais inteligente de fazer isso kkkkkkkkkkkkkkkkkk bagulho feio
         estado_sistema == CARTAO || estado_sistema == CARTAO_SENHA || estado_sistema == QUER_COMPROVANTE || estado_sistema == ADM_MENU ||estado_sistema == ADM_IRREG){ 
@@ -465,7 +515,6 @@ ISR (TIMER1_COMPA_vect){
         }
     }
 }
-
 ISR(TIMER3_COMPA_vect) {
     static char contador_segundos = 0;
 
@@ -482,14 +531,12 @@ ISR(TIMER3_COMPA_vect) {
         prox_minuto();
     }
 }
-
-
-
 int main(void) {
     
     signed char tempo_escolhido = -1;
     int preco_a_pagar = 0;
     char msg_valor_pagamento[20];
+    char msg_valor_pago[20];
     
     Mensagem msg;
 
@@ -764,6 +811,92 @@ int main(void) {
                 nova_tecla = TECLADO_LIVRE;
             }
         }
+        else if (estado_sistema == RECARGA) {
+            roda_teclado();
+            if (nova_tecla == TECLADO_PRESSIONADO){
+                contador_inatividade = 0;
+                tempo_escolhido = -1;
+                preco_a_pagar = 0;
+
+                if (carros[id_carro].tempo_contratado == t_30_min){
+                    if (saida_teclado == '1'){
+                        if (flag_vaga_especial)preco_a_pagar = 0;
+                        else preco_a_pagar = 200;
+                        tempo_escolhido = t_30_min; //30min
+                    }
+                    else if (saida_teclado == 'A'){
+                        if (flag_vaga_especial)preco_a_pagar = 200;
+                        else preco_a_pagar = 350;
+                        tempo_escolhido = t_1_hora; //30min a 1h
+                    }
+                    else if (saida_teclado == 'D'){
+                    if (!flag_vaga_especial){
+                        preco_a_pagar = 450;
+                        tempo_escolhido = t_1h_30m; //1h a 1h e 30min
+                    }
+                }
+                    else if (saida_teclado =='G'){
+                        if (flag_vaga_especial){   
+                            preco_a_pagar = 450;
+                            tempo_escolhido = t_ilimitado; //ilimitado
+                        }
+                    }
+                    
+
+                } else if (carros[id_carro].tempo_contratado == t_1_hora) {
+                    if (saida_teclado == '1'){
+                        if (flag_vaga_especial)preco_a_pagar = 0;
+                        else preco_a_pagar = 200;
+                        tempo_escolhido = t_30_min; //30min
+                    }
+                    else if (saida_teclado == 'A'){
+                        if (flag_vaga_especial)preco_a_pagar = 200;
+                        else preco_a_pagar = 350;
+                        tempo_escolhido = t_1_hora; //30min a 1h
+                    }
+                    else if (saida_teclado =='G'){
+                        if (flag_vaga_especial){   
+                            preco_a_pagar = 450;
+                            tempo_escolhido = t_ilimitado; //ilimitado
+                        }
+                    }
+                    
+                } else if (carros[id_carro].tempo_contratado == t_1h_30m) {
+                    if (saida_teclado == '1'){
+                        if (flag_vaga_especial)preco_a_pagar = 0;
+                        else preco_a_pagar = 200;
+                        tempo_escolhido = t_30_min; //30min
+                    }
+                    else if (saida_teclado =='G'){
+                        if (flag_vaga_especial){   
+                            preco_a_pagar = 450;
+                            tempo_escolhido = t_ilimitado; //ilimitado
+                        }
+                    }
+
+                } else if (carros[id_carro].tempo_contratado == t_2_hora) {
+                    
+                }
+
+                if (tempo_escolhido>=0){
+                    limpa_lcd ();
+                    lcd_cmd(PRIMEIRA_LINHA);
+                    
+                    
+                    if (preco_a_pagar != 0){
+                        sprintf(msg_valor_pagamento, "VALOR: R$%d,%02d", preco_a_pagar / 100, preco_a_pagar % 100);
+                        envia_string (msg_valor_pagamento);
+                        lcd_cmd(SEGUNDA_LINHA);
+                        envia_string ("1)MOD 2)CRT 3)VR");
+                        reset_memoria_teclado();
+                        estado_sistema = MENU_PAGAMENTO;
+                    }else{
+                        estado_sistema = REQ_DADOS_ESTAC; //Se está isento passa direto os dados do estacionamento para os serv externo
+                    }   
+                }
+                nova_tecla = TECLADO_LIVRE;
+            }
+        }
 
         else if (estado_sistema == SELECAO_TEMPO) {
             
@@ -795,7 +928,7 @@ int main(void) {
                     }
                 }
                 else if (saida_teclado =='G'){
-                    if (flag_vaga_especial){
+                    if (flag_vaga_especial){   
                         preco_a_pagar = 450;
                         tempo_escolhido = t_ilimitado; //ilimitado
                     }else {
@@ -842,7 +975,11 @@ int main(void) {
                 //UART_transmit(saida_teclado);
                 if (saida_teclado == '1'){
                     limpa_lcd();
-                    //Lógica para as moedas
+                    lcd_cmd(PRIMEIRA_LINHA);
+                    envia_string ("VALOR DEPOSITADO:");
+                    lcd_cmd(SEGUNDA_LINHA);
+                    reset_memoria_teclado();
+                    estado_sistema = MOEDA;
                 }
                 else if (saida_teclado == 'A'){//Cartao
                     limpa_lcd();
@@ -874,6 +1011,28 @@ int main(void) {
                 }
                 nova_tecla = TECLADO_LIVRE;
             }
+        }
+        else if (estado_sistema == MOEDA){
+            roda_teclado_numerico();
+            if(nova_tecla == TECLADO_PRESSIONADO){
+                contador_inatividade = 0;
+                
+                if (saida_teclado == 'A'){
+                    preco_pago += 100;
+                }
+                if (saida_teclado == 'B'){
+                    preco_pago += 50;
+                }
+                sprintf(msg_valor_pago, "R$%d,%02d", preco_pago / 100, preco_pago % 100);
+                envia_string (msg_valor_pago);
+
+                nova_tecla = TECLADO_LIVRE;
+            }
+            if(preco_a_pagar == preco_pago){
+                valor_pago = 0;
+                estado_sistema == QUER_COMPROVANTE 
+            }
+
         }
         else if (estado_sistema == CARTAO){
             roda_teclado_numerico();

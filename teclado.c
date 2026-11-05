@@ -9,11 +9,12 @@
 #define C0 PH3
 #define C1 PH4
 #define C2 PH5
+#define C3 PH6
 
-#define L0 PB1
-#define L1 PB2
-#define L2 PB3
-#define L3 PB4
+#define L0 PB0
+#define L1 PB1
+#define L2 PB2
+#define L3 PB3
 
 char tecla_atual = '3';
 int confirmar_tecla;
@@ -27,7 +28,7 @@ char tecla_pendente    = '\0';
 char tecla_anterior    = '\0';
 
 void init_teclado(){
-    DDRH &= ~((1 << C0) | (1 << C1) | (1 << C2)); //entradas
+    DDRH &= ~((1 << C0) | (1 << C1) | (1 << C2) | (1 << C3)); //entradas
     DDRB |= (1 << 7) | (1<<L0) | (1<<L1)| (1<<L2)| (1<<L3); //saidas
 }
 
@@ -57,7 +58,7 @@ char debouncer(char pin_index){
 char ler_teclado(void) {
     
     
-    PORTH |= (1<<C0) | (1<<C1) | (1<<C2);
+    PORTH |= (1<<C0) | (1<<C1) | (1<<C2) | (1 << C3);
     
     PORTB &= ~(1<<L0); //Ativa linha 0 
     
@@ -72,6 +73,9 @@ char ler_teclado(void) {
     if (debouncer(5) == 0) {
          return '3';
     }
+    if (debouncer(6) == 0) {
+         return 'A';
+    }
     
     PORTB &= ~(1<<L1); //Ativa linha 1 
     
@@ -85,6 +89,9 @@ char ler_teclado(void) {
     }
     if (debouncer(5) == 0) {
          return '6';
+    }
+    if (debouncer(6) == 0) {
+         return 'B';
     }
 
 

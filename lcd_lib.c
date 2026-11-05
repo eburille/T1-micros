@@ -6,7 +6,7 @@
 #define LCD_comando_porta PORTC
 #define RS PC0
 #define E PC1
-#define LCD_dado_porta PORTD
+#define LCD_dado_porta PORTA
 
 
 void lcd_cmd (unsigned char cmd){

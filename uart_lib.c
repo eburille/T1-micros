@@ -1,6 +1,7 @@
 #include <avr/io.h>
 #include "uart_lib.h"
 #include <avr/interrupt.h>
+#include "codificacao.h"
 
 #define BAUD 19200
 #define UBRR_VALUE ((F_CPU / (16UL * BAUD)) - 1)
@@ -56,7 +57,11 @@ char novo_caracter_recebido_UART(){
 
 void UART_envia_string(char *string){
     int i = 0;
-    while (string[i] != '\0'){
+    char string_cod[TAM_MAX];
+
+    codifica(string_cod);
+
+    while (string_cod[i] != '\0'){
         UART_transmit(string[i]);
         i++;
     }

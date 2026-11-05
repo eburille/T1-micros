@@ -1,5 +1,6 @@
 #include "gerenciador_msgs.h"
 #include "uart_lib.h"
+#include "codificacao.h"
 
 #define ESPERA                              0
 #define RECEBENDO_MENSAGEM                  1
@@ -14,6 +15,8 @@ char estado_gerenciador;
 Mensagem mensagem_recebida;
 
 volatile char num_caracteres_a_receber;
+
+int chave=0;
 
 
 void init_gerenciador_msgs(){
@@ -149,7 +152,14 @@ void gerenciar_msgs(){
             break;
         
         case MENSAGEM_RECEBIDA:
+
+            if(mensagem_recebida.tipo == MSG_CONDICAO_VIA){
+                encontra_chave(mensagem_recebida.string, mensagem_recebida.tamanho);
+            }
+
+            decodifica(mensagem_recebida.string, mensagem_recebida.tamanho);
             adiciona_mensagem(mensagem_recebida);
+
             estado_gerenciador = ESPERA;
             break;
 

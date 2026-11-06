@@ -55,6 +55,7 @@ char debouncer(char pin_index){
     }
 }
 
+//Verifica qual tecla foi pressionada
 char ler_teclado(void) {
     
     
@@ -127,6 +128,7 @@ char ler_teclado(void) {
     return '\0';
 }
 
+//Verifica qual caractere a sequencia de toques precisa retornar
 char decodifica_tecla (char tecla){
     if (tecla == '2'){
         if (toques_em_sequencia == 1)return 'A';
@@ -190,7 +192,7 @@ char decodifica_tecla (char tecla){
     return tecla;
 }
 
-
+//Logica que torna o teclado alfanumerico
 void roda_teclado() {
     
     tecla_pressionada = ler_teclado();
@@ -242,6 +244,7 @@ void roda_teclado() {
     tecla_anterior = tecla_pressionada;
 }
 
+//Logica que torna o teclado apenas numerico
 void roda_teclado_numerico() {
     
     tecla_pressionada = ler_teclado();
@@ -253,6 +256,7 @@ void roda_teclado_numerico() {
     tecla_anterior = tecla_pressionada;
 }
 
+//Reseta o teclado
 void reset_memoria_teclado() {
     tecla_pressionada = '\0';
     tecla_pendente    = '\0';

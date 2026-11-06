@@ -6,10 +6,8 @@
 
 extern int chave;
 
-void codifica();
-
-void decodifica();
-
-void encontra_chave();
+void codifica (char *mensagem, int p_chave);
+void decodifica (char *mensagem, int p_chave);
+void encontra_chave(char *mensagem);
 
 #endif

@@ -151,11 +151,12 @@ void gerenciar_msgs(){
         
         case MENSAGEM_RECEBIDA:
 
-           /*if(mensagem_recebida.tipo == MSG_CONDICAO_VIA){
-                encontra_chave(mensagem_recebida.string, mensagem_recebida.tamanho);
+           if(mensagem_recebida.tipo == MSG_CONDICAO_VIA){
+                encontra_chave(mensagem_recebida.string);
             }
-
-            decodifica(mensagem_recebida.string, mensagem_recebida.tamanho);*/
+           if(mensagem_recebida.tipo !=MSG_HORARIO){ 
+            decodifica(mensagem_recebida.string, chave);
+           }
             adiciona_mensagem(mensagem_recebida);
 
             estado_gerenciador = ESPERA;

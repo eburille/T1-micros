@@ -146,6 +146,19 @@ void tempo_recarga(){
             lcd_cmd(SEGUNDA_LINHA);
             envia_string("ESGOTADO");
         }
+    } else if (carros[id_carro].tempo_contratado == t_0){
+        limpa_lcd();
+        lcd_cmd(PRIMEIRA_LINHA); 
+        if (flag_vaga_especial){ //caso seja placa especial
+            envia_string("1)30min(R$0)");
+            lcd_cmd(SEGUNDA_LINHA);
+            envia_string("2)1h 3)2h 4)>2h");
+        }else{
+            envia_string("TEMPO: 1)30min");
+            lcd_cmd(SEGUNDA_LINHA);
+            envia_string("2)1h 3)1h30 4)2h");
+        }
+        estado_sistema = SELECAO_TEMPO;
     }
 }
 
@@ -232,16 +245,18 @@ void verifica_placa(){
         id_carro = -1;
         for(int i =0; i < num_carros;i++){
             //caso a placa digitada ja esteja estacionada, vai para a recarga (aumento do tempo)
-            if (strcmp(carros[i].placa, placa_digitada) == 0) {
+            if (strcmp(carros[i].placa, placa_digitada) == 0 ) {
                 id_carro = i;
                 tempo_recarga();
+            
                 estado_sistema = RECARGA;
+    
                 break;
             }
 
-        }
+        } 
         //caso seja um novo veiculo
-        if(estado_sistema != RECARGA){
+        if(estado_sistema != RECARGA ){
             limpa_lcd();
             lcd_cmd(PRIMEIRA_LINHA);
             envia_string("0)OSV  1)SARM");
@@ -972,6 +987,38 @@ int main(void) {
 
                 } else if (carros[id_carro].tempo_contratado == t_2_hora) {
                     
+                } else if (carros[id_carro].tempo_contratado == t_0){
+                    //logica de tarifação para carros novos
+                    if (saida_teclado == '1'){
+                        if (flag_vaga_especial)preco_a_pagar = 0;
+                        else preco_a_pagar = 200;
+                        tempo_escolhido = t_30_min; //30min
+                    }
+                    else if (saida_teclado == 'A'){
+                        if (flag_vaga_especial)preco_a_pagar = 200;
+                        else preco_a_pagar = 350;
+                        tempo_escolhido = t_1_hora; //30min a 1h
+                    }
+                    else if (saida_teclado == 'D'){
+                        if (flag_vaga_especial){
+                            preco_a_pagar = 350;
+                            tempo_escolhido = t_2_hora; //1h e 30min a 2h
+
+                        }else {
+                            preco_a_pagar = 450;
+                            tempo_escolhido = t_1h_30m; //1h a 1h e 30min
+                        }
+                    }
+                    else if (saida_teclado =='G'){
+                        if (flag_vaga_especial){   
+                            preco_a_pagar = 450;
+                            tempo_escolhido = t_ilimitado; //ilimitado
+                        }else {
+                            preco_a_pagar = 600;
+                            tempo_escolhido = t_2_hora; //1h e 30min a 2h
+                        }
+                    }
+    
                 }
 
                 if (tempo_escolhido>=0){

@@ -505,8 +505,9 @@ void imprime_comprovante(signed char tempo_escolhido, int preco_a_pagar){
     int tamanho = 0;
     if (tempo_escolhido == t_ilimitado){
         fflush(stdin);
-        tamanho = sprintf(payload_comprovante, "PARKMICROS\r\nPagamento: R$%d,%02d\r\nPlaca: %s\r\nValido ate: ILIMITADO\r\n", 
-            preco_a_pagar / 100, preco_a_pagar % 100, 
+        tamanho = sprintf(payload_comprovante, 
+            "\r\nPARKMICROS\r\nVALORRS%02d\r\nPLACA%s\r\nVALIDADEILIMITADO\r\n", 
+            preco_a_pagar, 
             placa_digitada);
     }
 
@@ -523,9 +524,8 @@ void imprime_comprovante(signed char tempo_escolhido, int preco_a_pagar){
 
         fflush(stdin);
         tamanho = sprintf(payload_comprovante, 
-        
-        "PARKMICROS\r\nPagamento: R$%d,%02d\r\nPlaca: %s\r\nValido ate: %02d:%02d\r\n", 
-        preco_a_pagar / 100, preco_a_pagar % 100, 
+        "\r\nPARKMICROS\r\nVALORRS%02d\r\nPLACA%s\r\nVALIDADE%02d%02d\r\n", 
+        preco_a_pagar , 
         placa_digitada, 
         hora_vencimento, min_vencimento);
     } else { // Caso seja recarga
@@ -541,8 +541,8 @@ void imprime_comprovante(signed char tempo_escolhido, int preco_a_pagar){
 
         fflush(stdin);
         tamanho = sprintf(payload_comprovante, 
-        "PARKMICROS\r\nPagamento: R$%d,%02d\r\nPlaca: %s\r\nValido ate: %02d:%02d\r\n", 
-        preco_a_pagar / 100, preco_a_pagar % 100, 
+        "\r\nPARKMICROS\r\nVALORRS%02d\r\nPLACA%s\r\nVALIDADE%02d%02d\r\n", 
+        preco_a_pagar , 
         placa_digitada, 
         hora_vencimento, min_vencimento);
         carros[id_carro].tempo_contratado = tempo_escolhido;
@@ -551,12 +551,11 @@ void imprime_comprovante(signed char tempo_escolhido, int preco_a_pagar){
     //envio do comprovante: 'P''I''ByteAlto''ByteBaixo''\r\n''payload'
     UART_transmit('P');
     UART_transmit('I');
-    tamanho = sprintf(payload_comprovante,"COMPROVANTE");
     UART_transmit((char)(tamanho >> 8));   //byte mais significativo
     UART_transmit((char)(tamanho & 0xFF)); //menos significativo 
-    UART_envia_comando("\r\n");
+    //UART_envia_comando("\r\n");
     UART_envia_string(payload_comprovante);
-    //UART_envia_string("COMPROVANTE");
+    
     //volta ao estado inicial de digitar placa
     limpa_lcd();
     indice_placa = 0;

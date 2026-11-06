@@ -11,6 +11,7 @@ static const char PALAVRAS_CHAVE[NUM_PALAVRAS][8] = {"OSVALDO", "JPESSOA", "SARM
 
 int chave = 0;
 
+// Garante q o caractere a direita do 9 seja o A e viceversa
 int modulo(int a, int m)
 {
     int r = a % m;
@@ -19,6 +20,7 @@ int modulo(int a, int m)
     return r;
 }
 
+//Compara o inicio das mensagens recebidas com o nome das ruas a fim de achar a chave
 int confere_inicio(const char *mensagem, const char *palavra){
     int i=0;
     while(palavra[i] != '\0' ){
@@ -31,6 +33,7 @@ int confere_inicio(const char *mensagem, const char *palavra){
     return 1;
 }
 
+//Localiza o indice da letra no alfabeto para corresponder com a strang ALFABETO criada acima
 int localiza_alfabeto (char caractere){
     if(caractere>='A' && caractere<='Z'){
         return caractere - 'A';
@@ -40,6 +43,7 @@ int localiza_alfabeto (char caractere){
     return  -1;
 }
 
+//Faz a função de soma apartir do indice do alfabeto mais a chave
 void soma (char *entrada, char *saida, int p_chave){
     for(int j=0; j<TAM_MAX; j++){
         if (entrada[j] == '\0'){
@@ -58,6 +62,7 @@ void soma (char *entrada, char *saida, int p_chave){
     }
 }
 
+//Desloca os caracteres ao longo do tamanho n da mensagem, chave vezes
 void desloca(char *entrada, char *saida, int p_chave){
     int n = (int)strlen(entrada);
     for(int j=0; j<n; j++){
@@ -67,36 +72,35 @@ void desloca(char *entrada, char *saida, int p_chave){
     saida[n] = '\0'; 
 }
 
+//Função que deve ser chamada para codificar uma mensagem
 void codifica (char *mensagem, int p_chave){
     char temp[TAM_MAX];
     soma(mensagem, temp, p_chave);
     desloca(temp, mensagem, p_chave);
 }
 
+//Função que deve ser chamada para decodificar uma mensagem
 void decodifica (char *mensagem, int p_chave){
     char temp[TAM_MAX];
     soma(mensagem, temp, -p_chave);
     desloca(temp, mensagem, -p_chave);
 }
 
+//Esta função procura a chave apartir da mensagem de condição da via, comparando ela com o nome das vias
 void encontra_chave(char *mensagem){
     char tentativa[TAM_MAX];
 
     for(int i = CHAVE_MIN; i <= CHAVE_MAX; i++){
         
-        // 1. O backup TEM de ser feito dentro do laço para recomeçar sempre limpo!
+        //cria uma copia da mensagem para manipular sem alterar a original
         strcpy(tentativa, mensagem); 
 
-        // 2. Testa a chave i
         decodifica(tentativa, i);
 
-        // 3. Varre as ruas
+        //Varre as palavras chaves
         for(int j = 0; j < NUM_PALAVRAS; j++){
             if(confere_inicio(tentativa, PALAVRAS_CHAVE[j]) == 1){
                 chave = i;
-                
-                // 4. Achou a chave! Copia a string decifrada de volta para a main e vaza.
-                //strcpy(mensagem, tentativa);
                 return;
             }
         }

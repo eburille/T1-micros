@@ -1,8 +1,7 @@
 #ifndef CODIFICACAO__H
 #define CODIFICACAO__H
 
-
-#define TAM_MAX      78   /* tamanho maximo de uma mensagem (com o '\0') */
+#define TAM_MAX      78   
 
 extern int chave;
 

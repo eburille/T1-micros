@@ -716,10 +716,10 @@ int main(void) {
                     nova_tecla = TECLADO_LIVRE; //descarta a primeira tecla pressionada (ela é usada só para tirar o sistema da inatividade)
                     limpa_lcd();
                     lcd_cmd(0x80);
-                    //envia_string("DIGITE PLACA");
-                    char c[50];
-                    sprintf(c,"%d", chave);
-                    envia_string(c);
+                    envia_string("DIGITE PLACA");
+                    //char c[50];
+                    //sprintf(c,"%d", chave);
+                    //envia_string(c);
                     lcd_cmd(0xC0);
                 }
             

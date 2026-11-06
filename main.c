@@ -507,7 +507,7 @@ void envia_dados_pagamento(int preco){
     UART_transmit ('P');
     UART_transmit ('P');
     UART_transmit((char)tamanho_payload);
-    UART_envia_string(pacote_dados);
+    UART_envia_comando(pacote_dados);
     //UART_envia_comando(pacote_dados);
     estado_sistema = AGUARDA_P; //Estado onde está aguardando o 'S''P' do servidor externo
 }

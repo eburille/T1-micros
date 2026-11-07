@@ -1,3 +1,5 @@
+/// parkimetro serve para gerenciar os carros do sistema, sejam eles estacionado regularmente ou irregularmente
+
 #ifndef PARKIMETRO__H
 #define PARKIMETRO__H
 

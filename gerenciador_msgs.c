@@ -2,6 +2,8 @@
 #include "uart_lib.h"
 #include "codificacao.h"
 
+
+/// Estados do gerenciador de mensagens
 #define ESPERA                              0
 #define RECEBENDO_MENSAGEM                  1
 #define MENSAGEM_RECEBIDA                   2
@@ -21,6 +23,7 @@ void init_gerenciador_msgs(){
     estado_gerenciador = ESPERA;
 }
 
+/// @brief Pega um caracter do buffer que representa o numero de bytes que faltam ser recebidos para completar a mensagem
 void proc_n_bytes_via(){
     char c;
 
@@ -34,6 +37,7 @@ void proc_n_bytes_via(){
     estado_gerenciador = RECEBENDO_MENSAGEM;
 }
 
+/// @brief Receve os caracteres do payload de uma mensagem até que o num_caracteres_a_receber seja 0
 void proc_caracter(){
     static char string_index = 0;
     char c;
@@ -62,6 +66,7 @@ void proc_caracter(){
     // UART_transmit(num_caracteres_a_receber + 48);
 }
 
+/// @brief le um char do buffer e verifica se é um caracter que indica que uma nova mensagem está chegando. Se estiver -> RECEBENDO_TIPO_MENSAGEM
 void verifica_UART(){
     char c;
     int num_novos_caracteres = novos_caracteres();
@@ -81,6 +86,7 @@ void verifica_UART(){
     
 }
 
+/// @brief Le um caracter que indica qual tipo de mensagem o parkimicros está recebendo
 void proc_tipo_mensagem(){
     char c;
     int num_novos_caracteres = novos_caracteres();
@@ -139,6 +145,7 @@ void proc_tipo_mensagem(){
     }
 }
 
+/// @brief Roda o sistema do gerenciador de estados
 void gerenciar_msgs(){
     switch (estado_gerenciador){
         case ESPERA:

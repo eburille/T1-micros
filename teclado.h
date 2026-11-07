@@ -1,3 +1,5 @@
+/// Gerencia teclado do sistema
+
 #ifndef TECLADO__H
 #define TECLADO__H
 

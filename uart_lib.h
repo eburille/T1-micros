@@ -1,3 +1,4 @@
+///Gerencia o UART do sistema
 #ifndef UART_LIB__H
 #define UART_LIB__H
 

@@ -1,3 +1,6 @@
+
+/// BUFFER CIRCULAR é responsável por armazenar Mensagens e/ou carcteres até o momento em que o processador tenha tempo para processa-las
+
 #ifndef BUFFER_CIRC_H
 #define BUFFER_CIRC_H
 
@@ -5,12 +8,14 @@
 
 extern volatile int i_escrita;
 
+/// @brief Buffer circular para mensagens recebidas
 typedef struct {
     Mensagem lista_mensagens[20];
     volatile int i_leitura;
     volatile int i_escrita;    
 }BufferCircularMsg;
 
+/// @brief Buffer circular para caracteres recebidos por UART
 typedef struct {
     char lista_caracter[20];
     volatile int i_leitura;

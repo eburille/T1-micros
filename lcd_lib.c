@@ -8,7 +8,8 @@
 #define E PC1
 #define LCD_dado_porta PORTA
 
-
+/// @brief Envia um comando para o LCD
+/// @param cmd 
 void lcd_cmd (unsigned char cmd){
 	LCD_comando_porta &= ~(1<<RS);
 	
@@ -27,7 +28,8 @@ void lcd_cmd (unsigned char cmd){
 	delay_1ms();
 }
 
-
+/// @brief Coloca um caracter no display e incrementa o cursor
+/// @param disp_data 
 void lcd_data(unsigned char disp_data){
 	LCD_comando_porta |= (1<<RS);
 	delay_1ms();
@@ -47,6 +49,7 @@ void lcd_data(unsigned char disp_data){
 	delay_1ms();
 }
 
+/// @brief Inicializa LCD
 void lcd_init (){
     DDRC |= (1 << RS) | (1 << E);
     DDRA |= 0xF0;
@@ -64,6 +67,8 @@ void lcd_init (){
 	 lcd_cmd(0x06);
 }
 
+/// @brief Escreve uma string no LCD
+/// @param string 
 void envia_string(char string[16]){
 	int i;
 	for (i = 0; i < 16; i++){
@@ -75,7 +80,7 @@ void envia_string(char string[16]){
 	}
 }
 
-
+/// @brief Limpa a tela do display
 void limpa_lcd(){
 	lcd_cmd(0x01); // limpa o display
 	delay_1ms();

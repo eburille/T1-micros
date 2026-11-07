@@ -1,3 +1,5 @@
+// gerenciador_msgs serve para processar os caracteres recebidos via UART e montar as mensagens descritas no protocolo
+
 #ifndef GERENCIADOR_MSGS__H
 #define GERENCIADOR_MSGS__H
 

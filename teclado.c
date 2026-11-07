@@ -27,11 +27,15 @@ char tecla_pressionada = '\0';
 char tecla_pendente    = '\0';
 char tecla_anterior    = '\0';
 
+/// @brief Inicia teclado
 void init_teclado(){
     DDRH &= ~((1 << C0) | (1 << C1) | (1 << C2) | (1 << C3)); //entradas
     DDRB |= (1 << 7) | (1<<L0) | (1<<L1)| (1<<L2)| (1<<L3); //saidas
 }
 
+/// @brief Debouncer das teclas
+/// @param pin_index Pinos a ser analisado
+/// @return Estado do pino
 char debouncer(char pin_index){
     char count = 0;
     char key_last = (PINH >> pin_index) & 0x01;
@@ -55,7 +59,9 @@ char debouncer(char pin_index){
     }
 }
 
-//Verifica qual tecla foi pressionada
+/// @brief Le o teclado 
+/// @param  
+/// @return Tecla pressionada
 char ler_teclado(void) {
     
     
@@ -128,7 +134,9 @@ char ler_teclado(void) {
     return '\0';
 }
 
-//Verifica qual caractere a sequencia de toques precisa retornar
+/// @brief Decodifica a tecla desejada pelo usuario baseada em quantas vezes ele apertou determinado botão
+/// @param tecla 
+/// @return 
 char decodifica_tecla (char tecla){
     if (tecla == '2'){
         if (toques_em_sequencia == 1)return 'A';
@@ -192,7 +200,7 @@ char decodifica_tecla (char tecla){
     return tecla;
 }
 
-//Logica que torna o teclado alfanumerico
+/// @brief Roda teclado alfanumerico completo
 void roda_teclado() {
     
     tecla_pressionada = ler_teclado();
@@ -244,7 +252,7 @@ void roda_teclado() {
     tecla_anterior = tecla_pressionada;
 }
 
-//Logica que torna o teclado apenas numerico
+/// @brief Roda versão mais rapida do teclado, somente com numeros
 void roda_teclado_numerico() {
     
     tecla_pressionada = ler_teclado();
@@ -256,7 +264,7 @@ void roda_teclado_numerico() {
     tecla_anterior = tecla_pressionada;
 }
 
-//Reseta o teclado
+/// @brief Reeseta variaveis do teclado
 void reset_memoria_teclado() {
     tecla_pressionada = '\0';
     tecla_pendente    = '\0';

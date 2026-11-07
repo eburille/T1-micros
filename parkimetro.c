@@ -31,6 +31,13 @@ int indice_irreg = 0;
 Carro carros_parasitas[NUM_MAX_CARROS];
 Carro carros_parasitas_tolerancia[NUM_MAX_CARROS];
 
+
+/// @brief Adiciona um carro recem estacionado na lista de carros
+/// @param placa 
+/// @param especial 
+/// @param tempo_contratado 
+/// @param rua 
+/// @param esta_regular 
 void adiciona_carro(char placa[7], char especial, char tempo_contratado, char rua, char esta_regular){
     char hora_atual[6];
     
@@ -91,15 +98,15 @@ void remove_carro(char i){
 
 
 char compara_placas(char placa1[7], char placa2[7]){
-    UART_envia_string("\nplaca1 - ");
-    UART_transmit(placa1[0]);
-    UART_transmit(placa1[1]);
-    UART_transmit(placa1[2]);
-    UART_transmit(placa1[3]);
-    UART_transmit(placa1[4]);
-    UART_transmit(placa1[5]);
-    UART_transmit(placa1[6]);
-    UART_transmit('\n');
+    // UART_envia_string("\nplaca1 - ");
+    // UART_transmit(placa1[0]);
+    // UART_transmit(placa1[1]);
+    // UART_transmit(placa1[2]);
+    // UART_transmit(placa1[3]);
+    // UART_transmit(placa1[4]);
+    // UART_transmit(placa1[5]);
+    // UART_transmit(placa1[6]);
+    // UART_transmit('\n');
     char i = 0;
     for (i; i < 7; i++){
         if (placa1[i] != placa2[i]){
@@ -109,24 +116,27 @@ char compara_placas(char placa1[7], char placa2[7]){
     return 1;
 }
 
+/// @brief Recebe uma string e retorna qual rua essa string fala
+/// @param rua 
+/// @return 
 char pega_rua(char rua[7]){
-    UART_transmit(rua[0]);
-    UART_transmit(rua[1]);
-    UART_transmit(rua[2]);
-    UART_transmit(rua[3]);
-    UART_transmit(rua[4]);
-    UART_transmit(rua[5]);
-    UART_transmit(rua[6]);
-    UART_transmit('\n');
+    // UART_transmit(rua[0]);
+    // UART_transmit(rua[1]);
+    // UART_transmit(rua[2]);
+    // UART_transmit(rua[3]);
+    // UART_transmit(rua[4]);
+    // UART_transmit(rua[5]);
+    // UART_transmit(rua[6]);
+    // UART_transmit('\n');
 
     if (rua[0] == 'O'){
-        UART_envia_string("ENTROU EM OSVALDO");
+        // UART_envia_string("ENTROU EM OSVALDO");
         return OSVALDO;
     }else if (rua[0] == 'J'){
-        UART_envia_string("ENTROU EM JPESSOA");
+        // UART_envia_string("ENTROU EM JPESSOA");
         return JPESSOA;
     }else if (rua[0] == 'S'){
-        UART_envia_string("ENTROU EM SARMENT");
+        // UART_envia_string("ENTROU EM SARMENT");
         return SARMENT;
     }
 }
@@ -193,10 +203,12 @@ void verifica_carros_parasitas(char placas[][7], char num_placas){
     }
 }
 
+/// @brief Gerencia parkimetro
 void gerenciar_parkimetro(){
     verifica_carros_regulares();
 }
 
+/// @brief Usado somente para debug
 void printa_lista_carros(){
     int i = 0;
     Carro carro;

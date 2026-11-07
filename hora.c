@@ -10,6 +10,8 @@ volatile char min = 30;
 volatile unsigned char ano1 = 20;
 volatile unsigned char ano2 = 26;
 
+/// @brief verifica se é horario comercial
+/// @return 1 para TRUE e 0 para FALSE
 char eh_horario_comercial(){
     if (hora >= HORA_INICIO_TRABALHO && hora < HORA_FIM_TRABALHO){
         return 1;
@@ -30,7 +32,7 @@ void ajustar_hora(unsigned char string[6]){
     ano2 = string[3];
 }
 
-/// @brief Calcula a diferença de tempo em minutos entre a hora atual e a hora passada por parametro
+/// @brief Calcula a diferença de tempo em minutos entre a hora atual e a hora passada por parametro. Caso a data inicial não seja a igual a data atual, retorna 500
 /// @param dia_inicial 
 /// @param mes_inicial 
 /// @param ano_inicial 
@@ -107,6 +109,7 @@ void hora_atual_str(char hora_atual_ptr[6]){
     hora_atual_ptr[5] = min;
 }
 
+/// @brief Função usada somente para debug
 void printa_data(){
     UART_transmit('\n');
     UART_envia_string("Data atual - ");

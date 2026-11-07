@@ -1,3 +1,5 @@
+/// hora serve para gerenciar o tempo no parkimicros
+
 #ifndef HORA__H
 #define HORA__H
 
